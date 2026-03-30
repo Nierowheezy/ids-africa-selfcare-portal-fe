@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   title: "IDS Africa Self-Care Portal",
   description: "Your gateway to truly unlimited internet access",
   icons: {
-    icon: "/images/favicon.ico",
+    icon: "/favicon.ico",
   },
 };
 
