@@ -1,11 +1,37 @@
+"use client";
+
+import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { UserCircle, CreditCard, Headphones } from "lucide-react";
+import { UserCircle, CreditCard, Headphones, Loader2 } from "lucide-react";
+import { useAuthStore } from "@/stores/authStore";
 
-export default function Page() {
+export default function LandingPage() {
+  const router = useRouter();
+  const { isAuthenticated, checkAuth } = useAuthStore();
+
+  // Redirect logged-in users away from landing page
+  useEffect(() => {
+    checkAuth();
+
+    if (isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isAuthenticated, checkAuth, router]);
+
+  // Optional: Show loading while checking
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-red-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <Header />
@@ -29,11 +55,8 @@ export default function Page() {
                 </p>
               </div>
 
-              {/* Divider */}
               <div className="border-t border-gray-200 pt-6">
-                {/* Feature Items */}
                 <div className="space-y-6">
-                  {/* Manage Profile */}
                   <div className="flex items-start space-x-4 group cursor-pointer">
                     <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 group-hover:bg-red-200 transition-colors duration-200">
                       <UserCircle className="h-5 w-5 text-red-600" />
@@ -49,10 +72,8 @@ export default function Page() {
                     </div>
                   </div>
 
-                  {/* Divider */}
                   <div className="border-t border-gray-200" />
 
-                  {/* Renew Subscription */}
                   <div className="flex items-start space-x-4 group cursor-pointer">
                     <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 group-hover:bg-red-200 transition-colors duration-200">
                       <CreditCard className="h-5 w-5 text-red-600" />
@@ -67,10 +88,8 @@ export default function Page() {
                     </div>
                   </div>
 
-                  {/* Divider */}
                   <div className="border-t border-gray-200" />
 
-                  {/* Support */}
                   <div className="flex items-start space-x-4 group cursor-pointer">
                     <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 group-hover:bg-red-200 transition-colors duration-200">
                       <Headphones className="h-5 w-5 text-red-600" />
@@ -108,7 +127,6 @@ export default function Page() {
                   priority
                 />
               </div>
-              {/* Decorative background */}
               <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-transparent rounded-full blur-3xl opacity-50 -z-10" />
             </div>
           </div>

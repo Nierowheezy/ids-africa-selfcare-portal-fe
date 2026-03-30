@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -22,12 +22,22 @@ import { useAuthStore } from "@/stores/authStore";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading, error, clearError } = useAuthStore();
+  const { login, isLoading, error, clearError, isAuthenticated, checkAuth } =
+    useAuthStore();
 
   const [accountNumber, setAccountNumber] = useState("");
   const [password, setPassword] = useState("");
   const [resetEmail, setResetEmail] = useState("");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    checkAuth(); // Check current auth status
+
+    if (isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isAuthenticated, checkAuth, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,18 +51,14 @@ export default function LoginPage() {
         description: "Welcome back!",
       });
 
-      router.push("/dashboard");
-      router.refresh(); // Refresh server components that may use cookies
+      router.replace("/dashboard");
     } catch (err: any) {
-      // Error already handled in store + global interceptor toast
-      // Optional: show more specific message if needed
       console.error("Login failed:", err);
     }
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate for now – later move to authService.resetPassword()
     setTimeout(() => {
       setShowForgotPassword(false);
       setResetEmail("");
@@ -63,30 +69,27 @@ export default function LoginPage() {
     }, 1500);
   };
 
+  // Show loading while checking auth
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-red-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
       <Header />
 
       <main className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {/* Optional test button – remove later */}
-          {/* <div className="mb-6 text-center">
-            <Button
-              variant="outline"
-              onClick={testBackend}
-              className="border-gray-400 hover:border-red-500 text-gray-700 hover:text-red-600"
-            >
-              Test Connection to Backend
-            </Button>
-          </div> */}
-
           <Card className="shadow-xl border-gray-200 overflow-hidden">
             <CardContent className="p-8">
               <h1 className="text-2xl font-heading font-bold text-gray-900 mb-8">
                 Login to your dashboard
               </h1>
 
-              {/* Show login error from store */}
               {error && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
                   {error}
@@ -221,18 +224,6 @@ export default function LoginPage() {
                 "Reset Password"
               )}
             </Button>
-
-            <p className="text-xs text-gray-600 text-center">
-              By continuing, you agree to the FTTH Service{" "}
-              <Link href="#" className="text-red-600 hover:underline">
-                Terms of Use
-              </Link>{" "}
-              and{" "}
-              <Link href="#" className="text-red-600 hover:underline">
-                Privacy Notice
-              </Link>
-              .
-            </p>
 
             <button
               type="button"
