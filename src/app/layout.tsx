@@ -38,6 +38,10 @@ const jetBrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "IDS Africa Self-Care Portal",
   description: "Your gateway to truly unlimited internet access",
+  icons: {
+    icon: [{ url: "/favicon.ico" }, { url: "/icon.png", type: "image/png" }],
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({
