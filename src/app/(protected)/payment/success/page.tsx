@@ -17,9 +17,10 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { paymentService } from "@/services/paymentService";
 
-export default function PaymentSuccessPage() {
+export default function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+
   const reference = searchParams.get("reference") || searchParams.get("trxref");
 
   const [status, setStatus] = useState<
@@ -29,7 +30,7 @@ export default function PaymentSuccessPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const pollCountRef = useRef(0);
-  const maxPolls = 18; // ~3 minutes at 10s interval
+  const maxPolls = 18;
 
   const fetchStatus = async (isRetry = false) => {
     if (!reference) {
@@ -42,10 +43,10 @@ export default function PaymentSuccessPage() {
       const data = await paymentService.getPaymentStatus(reference);
       setPayment(data);
 
-      // Status logic
       if (data.status === "PAID") {
         if (data.ucrm_sync_status === "completed") {
           setStatus("success");
+
           if (!isRetry) {
             toast({
               title: "Payment Completed!",
@@ -53,13 +54,12 @@ export default function PaymentSuccessPage() {
             });
           }
         } else {
-          setStatus("pending"); // sync in progress
+          setStatus("pending");
         }
       } else if (data.status === "FAILED") {
         setStatus("failed");
         setErrorMsg("Payment was not successful.");
       } else {
-        // Covers PENDING or unknown
         setStatus("pending");
       }
     } catch (err: any) {
@@ -71,7 +71,6 @@ export default function PaymentSuccessPage() {
   useEffect(() => {
     if (!reference) return;
 
-    // Initial fetch
     fetchStatus();
 
     const interval = setInterval(() => {
@@ -124,27 +123,29 @@ export default function PaymentSuccessPage() {
                 <h2 className="text-3xl font-bold text-gray-900 mt-4">
                   Payment Successful!
                 </h2>
+
                 <div className="mt-6 space-y-3">
                   <p className="text-xl font-semibold text-gray-800">
                     ₦{Number(payment.amount)?.toLocaleString() || "-"}
                   </p>
+
                   <p className="text-sm text-gray-600">
                     Reference:{" "}
                     <span className="font-mono">
                       {payment.reference || reference}
                     </span>
                   </p>
+
                   <p className="text-base text-green-700 font-medium">
                     Your account has been updated
                   </p>
                 </div>
+
                 <div className="pt-10 flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                    onClick={() => router.push("/dashboard")}
-                  >
+                  <Button onClick={() => router.push("/dashboard")}>
                     Go to Dashboard
                   </Button>
+
                   <Button
                     variant="outline"
                     onClick={() => router.push("/payment/history")}
@@ -158,22 +159,27 @@ export default function PaymentSuccessPage() {
             {status === "pending" && (
               <>
                 <Clock className="h-16 w-16 text-yellow-600 mx-auto" />
+
                 <h2 className="text-2xl font-bold text-gray-900 mt-4">
                   Payment Received
                 </h2>
+
                 <p className="text-lg text-gray-600 mt-4 max-w-md mx-auto">
                   Your payment has been confirmed. We're syncing it to your
                   account — this usually takes just a few moments.
                 </p>
+
                 <p className="text-sm text-gray-500 mt-3 font-mono">
                   Reference: {reference}
                 </p>
+
                 <div className="mt-8">
                   <p className="text-sm text-gray-500 mb-4">
                     {pollCountRef.current >= maxPolls
                       ? "Sync is taking longer than expected — your payment is safe."
                       : "Checking sync status..."}
                   </p>
+
                   <Button
                     variant="outline"
                     onClick={handleRetry}
@@ -189,13 +195,16 @@ export default function PaymentSuccessPage() {
             {status === "failed" && (
               <>
                 <AlertTriangle className="h-20 w-20 text-red-600 mx-auto" />
+
                 <h2 className="text-3xl font-bold text-gray-900 mt-4">
                   Payment Issue
                 </h2>
+
                 <p className="text-lg text-gray-600 mt-4 max-w-md mx-auto">
                   {errorMsg ||
-                    "We couldn't confirm the payment result. Your card was not charged — please try again or check your payment history."}
+                    "We couldn't confirm the payment result. Please try again or check your payment history."}
                 </p>
+
                 <div className="pt-10 flex flex-col sm:flex-row gap-4 justify-center">
                   <Button
                     variant="outline"
@@ -203,6 +212,7 @@ export default function PaymentSuccessPage() {
                   >
                     Try Again
                   </Button>
+
                   <Button onClick={() => router.push("/dashboard")}>
                     Back to Dashboard
                   </Button>
