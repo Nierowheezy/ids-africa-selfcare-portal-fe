@@ -33,26 +33,48 @@ export default function LoginPage() {
     e.preventDefault();
     clearError();
 
+    console.log("🔵 [LoginPage] === LOGIN ATTEMPT STARTED ===");
+    console.log("🔵 [LoginPage] Account Number:", accountNumber.trim());
+
     try {
+      console.log("🔵 [LoginPage] Calling store.login()...");
       await login(accountNumber.trim(), password);
+
+      console.log("✅ [LoginPage] store.login() succeeded");
+      console.log("✅ [LoginPage] Current auth state:", {
+        isAuthenticated: useAuthStore.getState().isAuthenticated,
+        isLoading: useAuthStore.getState().isLoading,
+        hasUser: !!useAuthStore.getState().user,
+        userName: useAuthStore.getState().user?.name,
+      });
 
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
 
+      console.log(
+        "🔵 [LoginPage] Redirecting with router.push('/dashboard')...",
+      );
       router.push("/dashboard");
-      router.refresh(); // Refresh server components that may use cookies
+
+      // Additional attempts to force navigation
+      setTimeout(() => {
+        console.log("🔵 [LoginPage] Attempting router.replace('/dashboard')");
+        router.replace("/dashboard");
+        console.log("🔵 [LoginPage] Calling router.refresh()");
+        router.refresh();
+      }, 300);
     } catch (err: any) {
-      // Error already handled in store + global interceptor toast
-      // Optional: show more specific message if needed
-      console.error("Login failed:", err);
+      console.error("❌ [LoginPage] Login failed with error:", err);
+      console.error("❌ [LoginPage] Error message:", err.message);
     }
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate for now – later move to authService.resetPassword()
+    console.log("🔵 [LoginPage] Forgot password requested for:", resetEmail);
+
     setTimeout(() => {
       setShowForgotPassword(false);
       setResetEmail("");
@@ -69,24 +91,12 @@ export default function LoginPage() {
 
       <main className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {/* Optional test button – remove later */}
-          {/* <div className="mb-6 text-center">
-            <Button
-              variant="outline"
-              onClick={testBackend}
-              className="border-gray-400 hover:border-red-500 text-gray-700 hover:text-red-600"
-            >
-              Test Connection to Backend
-            </Button>
-          </div> */}
-
           <Card className="shadow-xl border-gray-200 overflow-hidden">
             <CardContent className="p-8">
               <h1 className="text-2xl font-heading font-bold text-gray-900 mb-8">
                 Login to your dashboard
               </h1>
 
-              {/* Show login error from store */}
               {error && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
                   {error}
