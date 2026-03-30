@@ -1,5 +1,4 @@
 /** @type {import('next').NextConfig} */
-
 const nextConfig = {
   images: {
     domains: ["images.unsplash.com"],
@@ -9,8 +8,9 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "https://ids-africa-selfcare-portal-api-j5yr.onrender.com",
-        // ↑↑↑ CHANGE THIS to your actual Render backend URL
+        destination:
+          "https://ids-africa-selfcare-portal-api-j5yr.onrender.com/api/:path*",
+        // ← Must include /api/:path* at the end
       },
     ];
   },

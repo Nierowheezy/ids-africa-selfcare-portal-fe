@@ -1,10 +1,10 @@
 // src/services/authService.ts
 import api from "@/lib/api";
-import { User } from "@/types"; // ← now from types
+import { User } from "@/types";
 
 export const authService = {
   async login(accountNumber: string, password: string): Promise<User> {
-    const response = await api.post("/api/auth/login", {
+    const response = await api.post("/auth/login", {
       accountNumber: accountNumber.trim(),
       password,
     });
@@ -13,7 +13,8 @@ export const authService = {
       throw new Error(response.data?.message || "Login failed");
     }
 
-    const meResponse = await api.get("/api/auth/me");
+    // Fetch user profile after successful login
+    const meResponse = await api.get("/auth/me");
 
     if (!meResponse.data?.success) {
       throw new Error("Failed to fetch user profile after login");
@@ -23,12 +24,12 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
-    await api.post("/api/auth/logout");
+    await api.post("/auth/logout");
   },
 
   async fetchCurrentUser(): Promise<User | null> {
     try {
-      const response = await api.get("/api/auth/me");
+      const response = await api.get("/auth/me");
       if (response.data?.success) {
         return response.data.data.user as User;
       }
