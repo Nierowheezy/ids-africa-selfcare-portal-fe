@@ -12,31 +12,45 @@ const protectedPaths = [
 const publicAuthPaths = ["/login", "/reset-password"];
 const landingPage = "/";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check for tokens
-  const accessToken = request.cookies.get("access_token")?.value;
+  // Detect if user is logged in (best signal is refresh_token cookie)
   const refreshToken = request.cookies.get("refresh_token")?.value;
-  const isLoggedIn = !!accessToken || !!refreshToken;
+  const isLoggedIn = !!refreshToken;
 
   console.log(`[Middleware] ${pathname} | LoggedIn: ${isLoggedIn}`);
 
-  // 1️⃣ Logged-in user trying to access login or home page → redirect to dashboard
+  // ==================== CASE 1: Logged-in user accessing public pages ====================
+  if (isLoggedIn) {
+    if (publicAuthPaths.includes(pathname) || pathname === landingPage) {
+      console.log(
+        `[Middleware] Logged-in user → Redirecting from ${pathname} to /dashboard`,
+      );
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+  }
+
+  // ==================== CASE 2: Logged-out user accessing protected pages ====================
+  if (!isLoggedIn) {
+    if (protectedPaths.some((path) => pathname.startsWith(path))) {
+      console.log(
+        `[Middleware] Not logged in → Redirecting ${pathname} to /login`,
+      );
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+  }
+
+  // ==================== SPECIAL CASES ====================
+  // Allow payment success page
   if (
-    isLoggedIn &&
-    (publicAuthPaths.includes(pathname) || pathname === landingPage)
+    pathname === "/payment/success" &&
+    request.nextUrl.searchParams.has("reference")
   ) {
-    console.log(`[Middleware] Logged in → Redirecting to /dashboard`);
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.next();
   }
 
-  // 2️⃣ Logged-out user trying to access protected pages → redirect to login
-  if (!isLoggedIn && protectedPaths.some((path) => pathname.startsWith(path))) {
-    console.log(`[Middleware] Not logged in → Redirecting to /login`);
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
+  // Allow everything else
   return NextResponse.next();
 }
 
