@@ -1,6 +1,5 @@
 "use client";
 
-import { Suspense } from "react";
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Header } from "@/components/layout/Header";
@@ -18,8 +17,7 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { paymentService } from "@/services/paymentService";
 
-// Inner Client Component that uses useSearchParams
-function PaymentSuccessContent() {
+export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const reference = searchParams.get("reference") || searchParams.get("trxref");
@@ -44,6 +42,7 @@ function PaymentSuccessContent() {
       const data = await paymentService.getPaymentStatus(reference);
       setPayment(data);
 
+      // Status logic
       if (data.status === "PAID") {
         if (data.ucrm_sync_status === "completed") {
           setStatus("success");
@@ -54,12 +53,13 @@ function PaymentSuccessContent() {
             });
           }
         } else {
-          setStatus("pending");
+          setStatus("pending"); // sync in progress
         }
       } else if (data.status === "FAILED") {
         setStatus("failed");
         setErrorMsg("Payment was not successful.");
       } else {
+        // Covers PENDING or unknown
         setStatus("pending");
       }
     } catch (err: any) {
@@ -71,6 +71,7 @@ function PaymentSuccessContent() {
   useEffect(() => {
     if (!reference) return;
 
+    // Initial fetch
     fetchStatus();
 
     const interval = setInterval(() => {
@@ -215,23 +216,5 @@ function PaymentSuccessContent() {
       <Footer />
       <ChatWidget />
     </div>
-  );
-}
-
-// Main Page Component with Suspense Boundary
-export default function PaymentSuccessPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="h-12 w-12 animate-spin mx-auto text-red-600" />
-            <p className="mt-4 text-lg">Verifying your payment...</p>
-          </div>
-        </div>
-      }
-    >
-      <PaymentSuccessContent />
-    </Suspense>
   );
 }
