@@ -10,33 +10,38 @@ const protectedPaths = [
 ];
 
 const publicAuthPaths = ["/login", "/reset-password"];
+const landingPage = "/";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Get tokens
+  // Get authentication indicators
   const refreshToken = request.cookies.get("refresh_token")?.value;
-  const accessToken = request.cookies.get("access_token")?.value;
-  const authHeader = request.headers.get("authorization");
-  const bearerToken = authHeader?.startsWith("Bearer ")
-    ? authHeader.slice(7)
+  const bearerToken = request.headers
+    .get("authorization")
+    ?.startsWith("Bearer ")
+    ? request.headers.get("authorization")!.slice(7)
     : null;
 
-  const isLoggedIn = !!(refreshToken || bearerToken || accessToken);
+  const isLoggedIn = !!(refreshToken || bearerToken);
 
   console.log(
     `[Middleware] ${request.method} ${pathname} | LoggedIn: ${isLoggedIn}`,
   );
 
-  // 1. If user is logged in and tries to access login or reset-password → redirect to dashboard
-  if (isLoggedIn && publicAuthPaths.includes(pathname)) {
-    console.log(
-      `[Middleware] ✅ User is logged in → Redirecting from ${pathname} to /dashboard`,
-    );
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  // ====================== REDIRECT LOGGED-IN USERS ======================
+  // Prevent logged-in users from seeing landing page or login pages
+  if (isLoggedIn) {
+    if (publicAuthPaths.includes(pathname) || pathname === landingPage) {
+      console.log(
+        `[Middleware] ✅ Logged-in user trying to access ${pathname} → Redirecting to /dashboard`,
+      );
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
   }
 
-  // 2. Special case for payment success page
+  // ====================== SPECIAL CASES ======================
+  // Allow payment success page with reference
   if (
     pathname === "/payment/success" &&
     request.nextUrl.searchParams.has("reference")
@@ -44,11 +49,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 3. For protected routes - we let the request go through (client-side ProtectedLayout will handle redirect if needed)
+  // ====================== PROTECTED ROUTES ======================
+  // Let protected routes proceed (client-side ProtectedLayout will handle auth check)
   if (protectedPaths.some((path) => pathname.startsWith(path))) {
     return NextResponse.next();
   }
 
+  // Default: allow all other requests
   return NextResponse.next();
 }
 
@@ -61,5 +68,6 @@ export const config = {
     "/tickets/:path*",
     "/login",
     "/reset-password",
+    "/", // ← Important: Include root page
   ],
 };
