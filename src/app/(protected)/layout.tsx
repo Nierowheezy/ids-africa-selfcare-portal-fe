@@ -13,19 +13,28 @@ export default function ProtectedLayout({
   const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
 
   useEffect(() => {
-    console.log("🔵 [ProtectedLayout] Mounting - calling checkAuth()");
+    console.log(
+      "🔵 [ProtectedLayout] useEffect triggered - Mounting / Re-rendering",
+    );
+    console.log("🔵 [ProtectedLayout] Current state before checkAuth:", {
+      isAuthenticated,
+      isLoading,
+    });
+
     checkAuth();
   }, [checkAuth]);
 
-  console.log(
-    "🔵 [ProtectedLayout] Render → isAuthenticated:",
+  // Log every render to see what's happening
+  console.log("🔵 [ProtectedLayout] Render Cycle →", {
     isAuthenticated,
-    "| isLoading:",
     isLoading,
-  );
+    timestamp: new Date().toISOString(),
+  });
 
   if (isLoading) {
-    console.log("🔵 [ProtectedLayout] Showing loading spinner");
+    console.log(
+      "🔵 [ProtectedLayout] Showing loading spinner (isLoading = true)",
+    );
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-red-600" />
@@ -33,10 +42,15 @@ export default function ProtectedLayout({
     );
   }
 
-  console.log(
-    "🔵 [ProtectedLayout] Rendering children → isAuthenticated =",
-    isAuthenticated,
-  );
+  if (!isAuthenticated) {
+    console.log(
+      "⚠️ [ProtectedLayout] User is NOT authenticated - children will still render but middleware should have redirected",
+    );
+  } else {
+    console.log(
+      "✅ [ProtectedLayout] User is authenticated - rendering protected content",
+    );
+  }
 
   return <>{children}</>;
 }
