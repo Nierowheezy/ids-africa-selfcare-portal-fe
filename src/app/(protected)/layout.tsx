@@ -10,7 +10,7 @@ export default function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
+  const { isAuthenticated, isLoading, checkAuth, user } = useAuthStore();
 
   useEffect(() => {
     console.log(
@@ -19,15 +19,19 @@ export default function ProtectedLayout({
     console.log("🔵 [ProtectedLayout] Current state before checkAuth:", {
       isAuthenticated,
       isLoading,
+      hasUser: !!user,
+      userName: user?.name || "N/A",
     });
 
     checkAuth();
   }, [checkAuth]);
 
-  // Log every render to see what's happening
+  // Log every render to help debug
   console.log("🔵 [ProtectedLayout] Render Cycle →", {
     isAuthenticated,
     isLoading,
+    hasUser: !!user,
+    userName: user?.name || "N/A",
     timestamp: new Date().toISOString(),
   });
 
@@ -44,11 +48,11 @@ export default function ProtectedLayout({
 
   if (!isAuthenticated) {
     console.log(
-      "⚠️ [ProtectedLayout] User is NOT authenticated - children will still render but middleware should have redirected",
+      "⚠️ [ProtectedLayout] User is NOT authenticated → Middleware should have redirected, but rendering anyway",
     );
   } else {
     console.log(
-      "✅ [ProtectedLayout] User is authenticated - rendering protected content",
+      "✅ [ProtectedLayout] User is authenticated → Rendering protected content",
     );
   }
 

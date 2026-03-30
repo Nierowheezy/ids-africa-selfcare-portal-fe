@@ -73,6 +73,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       );
     }
 
+    // Clear everything
     set({
       user: null,
       isAuthenticated: false,

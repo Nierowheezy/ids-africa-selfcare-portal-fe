@@ -1,37 +1,20 @@
 // src/lib/api.ts
 import axios from "axios";
 import { toast } from "@/components/ui/use-toast";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/stores/authStore"; // ← import store
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001",
-  withCredentials: true, // Keep this for refresh_token cookie
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
   timeout: 15000,
 });
 
-// Request interceptor - Attach Bearer token from localStorage
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("access_token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-    console.log("🔵 [API Request] Added Bearer token to request");
-  } else {
-    console.log("⚠️ [API Request] No access_token found in localStorage");
-  }
-  return config;
-});
-
 // Response interceptor: catch 401 globally and clear auth state
 api.interceptors.response.use(
-  (response) => {
-    console.log(
-      `✅ [API Response] ${response.config.method?.toUpperCase()} ${response.config.url} → ${response.status}`,
-    );
-    return response;
-  },
+  (response) => response,
   (error) => {
     const status = error.response?.status;
     const message =
@@ -40,24 +23,21 @@ api.interceptors.response.use(
       error.message ||
       "Something went wrong";
 
-    console.error(
-      `❌ [API Error] ${error.config?.method?.toUpperCase()} ${error.config?.url} → ${status}`,
-      message,
-    );
-
     if (status === 401) {
-      // Clear token from localStorage
-      localStorage.removeItem("access_token");
-
       // Immediately clear auth store
-      useAuthStore.getState().logout();
+      useAuthStore.getState().logout(); // or forceLogout if you add it
 
+      // Show toast (optional - you can remove if handled elsewhere)
       toast({
         variant: "destructive",
         title: "Session Expired",
         description: "Please log in again.",
       });
+
+      // Optional: redirect here too, but better to let page/component handle it
+      // router.push('/login') — avoid here, causes issues in non-page contexts
     } else if (status !== 404 && status !== 400) {
+      // Show toast for other errors (optional)
       toast({
         variant: "destructive",
         title: "Error",

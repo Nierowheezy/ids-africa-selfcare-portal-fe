@@ -13,12 +13,24 @@ const authRelatedPublicPaths = ["/login", "/reset-password", "/"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const accessToken = request.cookies.get("access_token")?.value;
-  const hasToken = !!accessToken;
+
+  // Check for token in two places:
+  // 1. Cookie (refresh_token backup)
+  // 2. Authorization Bearer header (main access token from localStorage)
+  const cookieToken =
+    request.cookies.get("access_token")?.value ||
+    request.cookies.get("refresh_token")?.value;
+
+  const authHeader = request.headers.get("authorization");
+  const bearerToken = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : null;
+
+  const hasToken = !!(cookieToken || bearerToken);
 
   // Detailed logging for debugging
   console.log(
-    `[Middleware] ${request.method} ${pathname} | hasToken: ${hasToken}`,
+    `[Middleware] ${request.method} ${pathname} | hasToken: ${hasToken} (cookie: ${!!cookieToken}, bearer: ${!!bearerToken})`,
   );
 
   // Special exception for Paystack success callback
@@ -35,14 +47,13 @@ export async function middleware(request: NextRequest) {
     console.log(`[Middleware] Protected route detected: ${pathname}`);
 
     if (!hasToken) {
-      console.log(`[Middleware] ❌ No access_token → Redirecting to /login`);
+      console.log(`[Middleware] ❌ No token found → Redirecting to /login`);
       const url = new URL("/login", request.url);
       url.searchParams.set("redirect", pathname + request.nextUrl.search);
       return NextResponse.redirect(url);
     }
 
     console.log(`[Middleware] ✅ Token found for protected route: ${pathname}`);
-    // You can add more strict verification here later if needed
   }
 
   // 2. Public auth pages → redirect to dashboard if already logged in
