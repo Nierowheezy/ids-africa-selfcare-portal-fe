@@ -9,48 +9,54 @@ const protectedPaths = [
   "/tickets",
 ];
 
-const publicAuthPaths = ["/login", "/reset-password"];
-const landingPage = "/";
+const authRelatedPublicPaths = ["/login", "/reset-password", "/"];
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
 
-  // Detect if user is logged in (best signal is refresh_token cookie)
-  const refreshToken = request.cookies.get("refresh_token")?.value;
-  const isLoggedIn = !!refreshToken;
+  const accessToken = request.cookies.get("access_token")?.value;
 
-  console.log(`[Middleware] ${pathname} | LoggedIn: ${isLoggedIn}`);
-
-  // ==================== CASE 1: Logged-in user accessing public pages ====================
-  if (isLoggedIn) {
-    if (publicAuthPaths.includes(pathname) || pathname === landingPage) {
-      console.log(
-        `[Middleware] Logged-in user → Redirecting from ${pathname} to /dashboard`,
-      );
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-  }
-
-  // ==================== CASE 2: Logged-out user accessing protected pages ====================
-  if (!isLoggedIn) {
-    if (protectedPaths.some((path) => pathname.startsWith(path))) {
-      console.log(
-        `[Middleware] Not logged in → Redirecting ${pathname} to /login`,
-      );
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-  }
-
-  // ==================== SPECIAL CASES ====================
-  // Allow payment success page
-  if (
-    pathname === "/payment/success" &&
-    request.nextUrl.searchParams.has("reference")
-  ) {
+  // Special case: allow Paystack redirect callback even without token
+  if (pathname === "/payment/success" && searchParams.has("reference")) {
     return NextResponse.next();
   }
 
-  // Allow everything else
+  // ---------- Protected Routes ----------
+  if (protectedPaths.some((p) => pathname.startsWith(p))) {
+    // No token → redirect to login
+    if (!accessToken) {
+      const url = new URL("/login", request.url);
+      url.searchParams.set("redirect", pathname + request.nextUrl.search);
+      return NextResponse.redirect(url);
+    }
+
+    // Optional: Validate token by hitting your backend `/api/auth/me`
+    // If invalid → redirect to login
+    try {
+      const baseUrl = request.nextUrl.origin;
+      const meRes = await fetch(`${baseUrl}/api/auth/me`, {
+        headers: { cookie: `access_token=${accessToken}` },
+      });
+
+      if (!meRes.ok) {
+        const url = new URL("/login", request.url);
+        url.searchParams.set("redirect", pathname + request.nextUrl.search);
+        return NextResponse.redirect(url);
+      }
+    } catch {
+      const url = new URL("/login", request.url);
+      url.searchParams.set("redirect", pathname + request.nextUrl.search);
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // ---------- Public Auth Pages ----------
+  if (authRelatedPublicPaths.includes(pathname) && accessToken) {
+    // Already logged in → redirect to dashboard
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  // ---------- Everything else ----------
   return NextResponse.next();
 }
 
@@ -61,8 +67,8 @@ export const config = {
     "/profile/:path*",
     "/service-plan/:path*",
     "/tickets/:path*",
+    "/",
     "/login",
     "/reset-password",
-    "/",
   ],
 };
