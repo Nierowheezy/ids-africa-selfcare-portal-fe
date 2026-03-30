@@ -3,62 +3,67 @@ import { NextRequest, NextResponse } from "next/server";
 
 const protectedPaths = [
   "/dashboard",
-  "/payment", // ← protects /payment/history, /payment/make-payment, etc.
+  "/payment",
   "/profile",
   "/service-plan",
   "/tickets",
-  // add more private routes here if needed
 ];
 
-const authRelatedPublicPaths = [
-  "/login",
-  "/reset-password",
-  "/", // landing page
-  // add any other public pages that logged-in users should be redirected from
-];
+const authRelatedPublicPaths = ["/login", "/reset-password", "/"];
 
 export async function middleware(request: NextRequest) {
-  const { pathname, searchParams } = request.nextUrl;
-
+  const { pathname } = request.nextUrl;
   const accessToken = request.cookies.get("access_token")?.value;
+  const hasToken = !!accessToken;
 
-  // Special exception: Allow UNAUTHENTICATED access to /payment/success IF it has ?reference=...
-  // This handles Paystack callback redirects
-  if (pathname === "/payment/success" && searchParams.has("reference")) {
-    // Let it through without checking token
+  // Detailed logging for debugging
+  console.log(
+    `[Middleware] ${request.method} ${pathname} | hasToken: ${hasToken}`,
+  );
+
+  // Special exception for Paystack success callback
+  if (
+    pathname === "/payment/success" &&
+    request.nextUrl.searchParams.has("reference")
+  ) {
+    console.log(`[Middleware] Allowing Paystack success callback without auth`);
     return NextResponse.next();
   }
 
-  // 1. Protected/private routes → redirect to login if NO token
+  // 1. Protected routes → redirect to login if no token
   if (protectedPaths.some((p) => pathname.startsWith(p))) {
-    if (!accessToken) {
+    console.log(`[Middleware] Protected route detected: ${pathname}`);
+
+    if (!hasToken) {
+      console.log(`[Middleware] ❌ No access_token → Redirecting to /login`);
       const url = new URL("/login", request.url);
-      url.searchParams.set("redirect", pathname + request.nextUrl.search); // preserve original query too
+      url.searchParams.set("redirect", pathname + request.nextUrl.search);
       return NextResponse.redirect(url);
     }
 
-    // Optional: Add strict token verification here later if you want
-    // (e.g., call your /api/auth/me endpoint)
+    console.log(`[Middleware] ✅ Token found for protected route: ${pathname}`);
+    // You can add more strict verification here later if needed
   }
 
-  // 2. Auth-related public pages → redirect to dashboard if ALREADY logged in
-  if (accessToken && authRelatedPublicPaths.includes(pathname)) {
+  // 2. Public auth pages → redirect to dashboard if already logged in
+  if (hasToken && authRelatedPublicPaths.includes(pathname)) {
+    console.log(
+      `[Middleware] ✅ User already logged in + on public page (${pathname}) → Redirecting to /dashboard`,
+    );
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // 3. Everyone else → continue normally
+  console.log(`[Middleware] ✅ Allowing request to continue: ${pathname}`);
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    // Run middleware on these patterns
     "/dashboard/:path*",
-    "/payment/:path*", // ← this covers /payment/success, /payment/history, etc.
+    "/payment/:path*",
     "/profile/:path*",
     "/service-plan/:path*",
     "/tickets/:path*",
-    // Public auth pages (exact match)
     "/",
     "/login",
     "/reset-password",
