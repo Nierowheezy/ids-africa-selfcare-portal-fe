@@ -22,7 +22,7 @@ import { useAuthStore } from "@/stores/authStore";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading, error, clearError } = useAuthStore();
+  const { login, isLoading, error, clearError, checkAuth } = useAuthStore();
 
   const [accountNumber, setAccountNumber] = useState("");
   const [password, setPassword] = useState("");
@@ -33,7 +33,7 @@ export default function LoginPage() {
     e.preventDefault();
     clearError();
 
-    console.log("🔵 [LoginPage] === LOGIN ATTEMPT STARTED ===");
+    console.log("🔵 [LoginPage] Login attempt started...");
 
     try {
       await login(accountNumber.trim(), password);
@@ -44,6 +44,9 @@ export default function LoginPage() {
         title: "Login Successful",
         description: "Welcome back!",
       });
+
+      // Important: Refresh auth state before redirect
+      await checkAuth();
 
       // Reliable redirect
       console.log("🔵 [LoginPage] Redirecting to /dashboard...");
@@ -60,7 +63,6 @@ export default function LoginPage() {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("🔵 [LoginPage] Forgot password requested for:", resetEmail);
 
     setTimeout(() => {
       setShowForgotPassword(false);
@@ -188,6 +190,7 @@ export default function LoginPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleResetPassword} className="space-y-6">
+            {/* Reset form content remains the same */}
             <div className="space-y-2">
               <Label htmlFor="reset-email" className="text-sm font-medium">
                 Email
@@ -218,18 +221,6 @@ export default function LoginPage() {
                 "Reset Password"
               )}
             </Button>
-
-            <p className="text-xs text-gray-600 text-center">
-              By continuing, you agree to the FTTH Service{" "}
-              <Link href="#" className="text-red-600 hover:underline">
-                Terms of Use
-              </Link>{" "}
-              and{" "}
-              <Link href="#" className="text-red-600 hover:underline">
-                Privacy Notice
-              </Link>
-              .
-            </p>
 
             <button
               type="button"

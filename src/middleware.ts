@@ -1,7 +1,7 @@
 // src/middleware.ts
 import { NextRequest, NextResponse } from "next/server";
 
-const PROTECTED_ROUTES = [
+const protectedPaths = [
   "/dashboard",
   "/payment",
   "/profile",
@@ -9,32 +9,32 @@ const PROTECTED_ROUTES = [
   "/tickets",
 ];
 
-const PUBLIC_AUTH_ROUTES = ["/login", "/reset-password"];
-const LANDING_PAGE = "/";
+const publicAuthPaths = ["/login", "/reset-password"];
+const landingPage = "/";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const refreshToken = request.cookies.get("refresh_token")?.value;
+  const isLoggedIn = !!refreshToken;
 
-  const isLoggedIn = !!refreshToken; // Most reliable signal
+  console.log(`[Middleware] ${pathname} | LoggedIn: ${isLoggedIn}`);
 
-  // Case 1: Logged-in user trying to access login/landing page
-  if (
-    isLoggedIn &&
-    (PUBLIC_AUTH_ROUTES.includes(pathname) || pathname === LANDING_PAGE)
-  ) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  // 1. Logged-in user trying to access login or home page
+  if (isLoggedIn) {
+    if (publicAuthPaths.includes(pathname) || pathname === landingPage) {
+      console.log(`[Middleware] Logged in → Redirecting to /dashboard`);
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
   }
 
-  // Case 2: Logged-out user trying to access protected pages
-  if (
-    !isLoggedIn &&
-    PROTECTED_ROUTES.some((route) => pathname.startsWith(route))
-  ) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  // 2. Logged-out user trying to access protected pages
+  if (!isLoggedIn) {
+    if (protectedPaths.some((path) => pathname.startsWith(path))) {
+      console.log(`[Middleware] Not logged in → Redirecting to /login`);
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
   }
 
-  // Allow everything else
   return NextResponse.next();
 }
 
