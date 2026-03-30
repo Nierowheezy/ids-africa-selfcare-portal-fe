@@ -1,7 +1,7 @@
 // src/middleware.ts
 import { NextRequest, NextResponse } from "next/server";
 
-const protectedPaths = [
+const PROTECTED_ROUTES = [
   "/dashboard",
   "/payment",
   "/profile",
@@ -9,53 +9,32 @@ const protectedPaths = [
   "/tickets",
 ];
 
-const publicAuthPaths = ["/login", "/reset-password"];
-const landingPage = "/";
+const PUBLIC_AUTH_ROUTES = ["/login", "/reset-password"];
+const LANDING_PAGE = "/";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // Get authentication indicators
   const refreshToken = request.cookies.get("refresh_token")?.value;
-  const bearerToken = request.headers
-    .get("authorization")
-    ?.startsWith("Bearer ")
-    ? request.headers.get("authorization")!.slice(7)
-    : null;
 
-  const isLoggedIn = !!(refreshToken || bearerToken);
+  const isLoggedIn = !!refreshToken; // Most reliable signal
 
-  console.log(
-    `[Middleware] ${request.method} ${pathname} | LoggedIn: ${isLoggedIn}`,
-  );
-
-  // ====================== REDIRECT LOGGED-IN USERS ======================
-  // Prevent logged-in users from seeing landing page or login pages
-  if (isLoggedIn) {
-    if (publicAuthPaths.includes(pathname) || pathname === landingPage) {
-      console.log(
-        `[Middleware] ✅ Logged-in user trying to access ${pathname} → Redirecting to /dashboard`,
-      );
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-  }
-
-  // ====================== SPECIAL CASES ======================
-  // Allow payment success page with reference
+  // Case 1: Logged-in user trying to access login/landing page
   if (
-    pathname === "/payment/success" &&
-    request.nextUrl.searchParams.has("reference")
+    isLoggedIn &&
+    (PUBLIC_AUTH_ROUTES.includes(pathname) || pathname === LANDING_PAGE)
   ) {
-    return NextResponse.next();
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // ====================== PROTECTED ROUTES ======================
-  // Let protected routes proceed (client-side ProtectedLayout will handle auth check)
-  if (protectedPaths.some((path) => pathname.startsWith(path))) {
-    return NextResponse.next();
+  // Case 2: Logged-out user trying to access protected pages
+  if (
+    !isLoggedIn &&
+    PROTECTED_ROUTES.some((route) => pathname.startsWith(route))
+  ) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Default: allow all other requests
+  // Allow everything else
   return NextResponse.next();
 }
 
@@ -68,6 +47,6 @@ export const config = {
     "/tickets/:path*",
     "/login",
     "/reset-password",
-    "/", // ← Important: Include root page
+    "/",
   ],
 };
