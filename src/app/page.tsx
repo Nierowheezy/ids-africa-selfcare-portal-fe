@@ -12,21 +12,24 @@ import { useAuthStore } from "@/stores/authStore";
 
 export default function LandingPage() {
   const router = useRouter();
-  const { isAuthenticated, checkAuth } = useAuthStore();
+  const { isAuthenticated, checkAuth, isLoading } = useAuthStore(); // ← added isLoading
 
-  // Redirect logged-in users away from landing page
+  // Run checkAuth only once on mount
   useEffect(() => {
     checkAuth();
+  }, [checkAuth]);
 
+  // Redirect if user is authenticated (after check finishes)
+  useEffect(() => {
     if (isAuthenticated) {
       router.replace("/dashboard");
     }
-  }, [isAuthenticated, checkAuth, router]);
+  }, [isAuthenticated, router]);
 
-  // Optional: Show loading while checking
-  if (isAuthenticated) {
+  // Show loading spinner while checking auth status
+  if (isLoading && !isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <Loader2 className="h-12 w-12 animate-spin text-red-600" />
       </div>
     );
