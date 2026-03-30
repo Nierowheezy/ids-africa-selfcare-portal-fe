@@ -13,19 +13,10 @@ export default function ProtectedLayout({
   const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
 
   useEffect(() => {
-    console.log("🔵 [ProtectedLayout] Mounting - calling checkAuth()");
-    checkAuth();
+    checkAuth(); // Try to load user / refresh auth state on mount
   }, [checkAuth]);
 
-  console.log(
-    "🔵 [ProtectedLayout] Render → isAuthenticated:",
-    isAuthenticated,
-    "| isLoading:",
-    isLoading,
-  );
-
   if (isLoading) {
-    console.log("🔵 [ProtectedLayout] Showing loading spinner");
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-red-600" />
@@ -33,10 +24,7 @@ export default function ProtectedLayout({
     );
   }
 
-  console.log(
-    "🔵 [ProtectedLayout] Rendering children → isAuthenticated =",
-    isAuthenticated,
-  );
-
+  // If it's the Paystack callback → render children even if !isAuthenticated
+  // Otherwise → only render if authenticated (middleware already enforced this)
   return <>{children}</>;
 }
