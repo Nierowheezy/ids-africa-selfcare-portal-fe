@@ -12,36 +12,30 @@ export default function ProtectedLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { isAuthenticated, isLoading, checkAuth, user, forceLogout } =
-    useAuthStore();
+  const { isAuthenticated, isLoading, checkAuth, user } = useAuthStore();
   const [hasChecked, setHasChecked] = useState(false);
 
-  // Initial auth check when layout mounts
+  // 1️⃣ Run auth check on mount
   useEffect(() => {
-    console.log(
-      "🔵 [ProtectedLayout] Mounting - running initial auth check...",
-    );
-
-    checkAuth().finally(() => {
-      setHasChecked(true);
-    });
+    console.log("🔵 [ProtectedLayout] Running initial auth check...");
+    checkAuth()
+      .catch((err) => console.error("[ProtectedLayout] Auth error:", err))
+      .finally(() => setHasChecked(true));
   }, [checkAuth]);
 
-  // Handle redirect after auth check
+  // 2️⃣ Redirect if not authenticated after check
   useEffect(() => {
     if (hasChecked && !isLoading) {
       if (!isAuthenticated) {
-        console.log(
-          "⚠️ [ProtectedLayout] Not authenticated → Redirecting to /login",
-        );
+        console.log("⚠️ [ProtectedLayout] Not authenticated → /login");
         router.replace("/login");
       } else {
-        console.log("✅ [ProtectedLayout] User authenticated:", user?.name);
+        console.log("✅ [ProtectedLayout] Authenticated user:", user?.name);
       }
     }
-  }, [isAuthenticated, isLoading, hasChecked, router, user]);
+  }, [hasChecked, isLoading, isAuthenticated, router, user]);
 
-  // Show loading while checking auth
+  // 3️⃣ Loading state while checking auth
   if (isLoading || !hasChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -50,10 +44,11 @@ export default function ProtectedLayout({
     );
   }
 
-  // Safety check - don't render children if not authenticated
+  // 4️⃣ Safety fallback: don't render children if not authenticated
   if (!isAuthenticated) {
     return null;
   }
 
+  // ✅ Authenticated: render all protected pages
   return <>{children}</>;
 }
