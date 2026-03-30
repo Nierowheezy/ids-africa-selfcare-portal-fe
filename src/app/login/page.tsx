@@ -34,40 +34,27 @@ export default function LoginPage() {
     clearError();
 
     console.log("🔵 [LoginPage] === LOGIN ATTEMPT STARTED ===");
-    console.log("🔵 [LoginPage] Account Number:", accountNumber.trim());
 
     try {
-      console.log("🔵 [LoginPage] Calling store.login()...");
       await login(accountNumber.trim(), password);
 
-      console.log("✅ [LoginPage] store.login() succeeded");
-      console.log("✅ [LoginPage] Current auth state:", {
-        isAuthenticated: useAuthStore.getState().isAuthenticated,
-        isLoading: useAuthStore.getState().isLoading,
-        hasUser: !!useAuthStore.getState().user,
-        userName: useAuthStore.getState().user?.name,
-      });
+      console.log("✅ [LoginPage] Login successful");
 
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
 
-      console.log(
-        "🔵 [LoginPage] Redirecting with router.push('/dashboard')...",
-      );
-      router.push("/dashboard");
-
-      // Additional attempts to force navigation
-      setTimeout(() => {
-        console.log("🔵 [LoginPage] Attempting router.replace('/dashboard')");
-        router.replace("/dashboard");
-        console.log("🔵 [LoginPage] Calling router.refresh()");
-        router.refresh();
-      }, 300);
+      // Reliable redirect
+      console.log("🔵 [LoginPage] Redirecting to /dashboard...");
+      router.replace("/dashboard");
     } catch (err: any) {
-      console.error("❌ [LoginPage] Login failed with error:", err);
-      console.error("❌ [LoginPage] Error message:", err.message);
+      console.error("❌ [LoginPage] Login failed:", err?.message || err);
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: err?.message || "Invalid account number or password",
+      });
     }
   };
 

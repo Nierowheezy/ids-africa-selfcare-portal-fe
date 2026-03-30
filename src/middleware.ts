@@ -14,9 +14,8 @@ const authRelatedPublicPaths = ["/login", "/reset-password", "/"];
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check for token in cookies and Authorization header
   const refreshCookie = request.cookies.get("refresh_token")?.value;
-  const accessCookie = request.cookies.get("access_token")?.value; // kept for backward compatibility
+  const accessCookie = request.cookies.get("access_token")?.value;
   const authHeader = request.headers.get("authorization");
   const bearerToken = authHeader?.startsWith("Bearer ")
     ? authHeader.slice(7)
@@ -24,44 +23,31 @@ export async function middleware(request: NextRequest) {
 
   const hasToken = !!(refreshCookie || accessCookie || bearerToken);
 
-  // Detailed logging - VERY IMPORTANT for debugging
   console.log(
-    `[Middleware] ${request.method} ${pathname} | ` +
-      `hasToken: ${hasToken} ` +
-      `(refresh: ${!!refreshCookie}, accessCookie: ${!!accessCookie}, bearer: ${!!bearerToken})`,
+    `[Middleware] ${request.method} ${pathname} | hasToken: ${hasToken} ` +
+      `(refresh: ${!!refreshCookie}, bearer: ${!!bearerToken})`,
   );
 
-  // Special exception for Paystack success callback
   if (
     pathname === "/payment/success" &&
     request.nextUrl.searchParams.has("reference")
   ) {
-    console.log(`[Middleware] Allowing Paystack success callback without auth`);
     return NextResponse.next();
   }
 
-  // Protected routes - redirect to login if no token
-  if (protectedPaths.some((p) => pathname.startsWith(p))) {
-    console.log(`[Middleware] Protected route detected: ${pathname}`);
-
-    if (!hasToken) {
-      console.log(`[Middleware] ❌ No token found → Redirecting to /login`);
-      const url = new URL("/login", request.url);
-      url.searchParams.set("redirect", pathname + request.nextUrl.search);
-      return NextResponse.redirect(url);
-    }
-
-    console.log(
-      `[Middleware] ✅ Token accepted for protected route: ${pathname}`,
-    );
-  }
-
-  // Public auth pages - redirect to dashboard if already logged in
+  // Only redirect from login page if user is already logged in
   if (hasToken && authRelatedPublicPaths.includes(pathname)) {
     console.log(
-      `[Middleware] ✅ Already logged in on public page (${pathname}) → Redirecting to /dashboard`,
+      `[Middleware] ✅ Already logged in → Redirecting to /dashboard`,
     );
     return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  // For protected routes: allow them, let client-side ProtectedLayout handle the check
+  if (protectedPaths.some((p) => pathname.startsWith(p))) {
+    console.log(
+      `[Middleware] ✅ Allowing protected route (client-side will check)`,
+    );
   }
 
   console.log(`[Middleware] ✅ Allowing request to continue: ${pathname}`);
