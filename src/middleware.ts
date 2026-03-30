@@ -9,25 +9,34 @@ const protectedPaths = [
   "/tickets",
 ];
 
-const authRelatedPublicPaths = ["/login", "/reset-password", "/"];
+const publicAuthPaths = ["/login", "/reset-password"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const refreshCookie = request.cookies.get("refresh_token")?.value;
-  const accessCookie = request.cookies.get("access_token")?.value;
+  // Get tokens
+  const refreshToken = request.cookies.get("refresh_token")?.value;
+  const accessToken = request.cookies.get("access_token")?.value;
   const authHeader = request.headers.get("authorization");
   const bearerToken = authHeader?.startsWith("Bearer ")
     ? authHeader.slice(7)
     : null;
 
-  const hasToken = !!(refreshCookie || accessCookie || bearerToken);
+  const isLoggedIn = !!(refreshToken || bearerToken || accessToken);
 
   console.log(
-    `[Middleware] ${request.method} ${pathname} | hasToken: ${hasToken} ` +
-      `(refresh: ${!!refreshCookie}, bearer: ${!!bearerToken})`,
+    `[Middleware] ${request.method} ${pathname} | LoggedIn: ${isLoggedIn}`,
   );
 
+  // 1. If user is logged in and tries to access login or reset-password → redirect to dashboard
+  if (isLoggedIn && publicAuthPaths.includes(pathname)) {
+    console.log(
+      `[Middleware] ✅ User is logged in → Redirecting from ${pathname} to /dashboard`,
+    );
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  // 2. Special case for payment success page
   if (
     pathname === "/payment/success" &&
     request.nextUrl.searchParams.has("reference")
@@ -35,22 +44,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Only redirect from login page if user is already logged in
-  if (hasToken && authRelatedPublicPaths.includes(pathname)) {
-    console.log(
-      `[Middleware] ✅ Already logged in → Redirecting to /dashboard`,
-    );
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  // 3. For protected routes - we let the request go through (client-side ProtectedLayout will handle redirect if needed)
+  if (protectedPaths.some((path) => pathname.startsWith(path))) {
+    return NextResponse.next();
   }
 
-  // For protected routes: allow them, let client-side ProtectedLayout handle the check
-  if (protectedPaths.some((p) => pathname.startsWith(p))) {
-    console.log(
-      `[Middleware] ✅ Allowing protected route (client-side will check)`,
-    );
-  }
-
-  console.log(`[Middleware] ✅ Allowing request to continue: ${pathname}`);
   return NextResponse.next();
 }
 
@@ -61,7 +59,6 @@ export const config = {
     "/profile/:path*",
     "/service-plan/:path*",
     "/tickets/:path*",
-    "/",
     "/login",
     "/reset-password",
   ],

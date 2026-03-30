@@ -12,18 +12,22 @@ export default function ProtectedLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { isAuthenticated, isLoading, checkAuth, user } = useAuthStore();
+  const { isAuthenticated, isLoading, checkAuth, user, forceLogout } =
+    useAuthStore();
   const [hasChecked, setHasChecked] = useState(false);
 
-  // Run checkAuth once when layout mounts
+  // Initial auth check when layout mounts
   useEffect(() => {
-    console.log("🔵 [ProtectedLayout] Mounting - running checkAuth...");
+    console.log(
+      "🔵 [ProtectedLayout] Mounting - running initial auth check...",
+    );
+
     checkAuth().finally(() => {
       setHasChecked(true);
     });
   }, [checkAuth]);
 
-  // After auth check completes, decide what to do
+  // Handle redirect after auth check
   useEffect(() => {
     if (hasChecked && !isLoading) {
       if (!isAuthenticated) {
@@ -32,19 +36,13 @@ export default function ProtectedLayout({
         );
         router.replace("/login");
       } else {
-        console.log(
-          "✅ [ProtectedLayout] User authenticated → Rendering protected content",
-          {
-            userName: user?.name || "N/A",
-          },
-        );
+        console.log("✅ [ProtectedLayout] User authenticated:", user?.name);
       }
     }
   }, [isAuthenticated, isLoading, hasChecked, router, user]);
 
-  // Show loading spinner while checking authentication
+  // Show loading while checking auth
   if (isLoading || !hasChecked) {
-    console.log("🔵 [ProtectedLayout] Showing loading spinner...");
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-12 w-12 animate-spin text-red-600" />
@@ -52,7 +50,7 @@ export default function ProtectedLayout({
     );
   }
 
-  // Don't render children if not authenticated (router will redirect)
+  // Safety check - don't render children if not authenticated
   if (!isAuthenticated) {
     return null;
   }
