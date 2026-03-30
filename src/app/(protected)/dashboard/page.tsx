@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -17,6 +18,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/use-toast";
 import { dashboardService } from "@/services/dashboardService";
 import { paymentService } from "@/services/paymentService";
 import { DashboardResponse } from "@/types";
@@ -80,15 +82,17 @@ function DashboardSkeleton() {
 }
 
 export default function DashboardPage() {
-  // Dashboard data
+  const router = useRouter();
+
+  // Main dashboard data from /api/app/dashboard
   const { data, isLoading, isError, error } = useQuery<DashboardResponse>({
     queryKey: ["dashboard"],
     queryFn: dashboardService.getDashboard,
     retry: 1,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Last payment data
+  // Real last payment (separate lightweight query)
   const { data: lastPayment } = useQuery({
     queryKey: ["lastPayment"],
     queryFn: paymentService.getLastPayment,
@@ -96,21 +100,18 @@ export default function DashboardPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen flex-col bg-gray-50">
-        <Header />
-        <main className="flex-1 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-          <DashboardSkeleton />
-        </main>
-        <Footer />
-        <ChatWidget />
-      </div>
-    );
+  // Handle 401 (session expired)
+  if (isError && (error as any)?.response?.status === 401) {
+    toast({
+      variant: "destructive",
+      title: "Session Expired",
+      description: "Please log in again.",
+    });
+    router.push("/login");
+    return null;
   }
 
-  // Error state
+  // General error fallback (network error, timeout, 500, etc.)
   if (isError) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50">
@@ -126,6 +127,9 @@ export default function DashboardPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button onClick={() => window.location.reload()}>Retry</Button>
+              <Button variant="outline" onClick={() => router.push("/login")}>
+                Log Out & Try Again
+              </Button>
             </div>
           </div>
         </main>
@@ -135,10 +139,52 @@ export default function DashboardPage() {
     );
   }
 
-  // Safe data check
-  const dashboard = data!; // assume layout guarantees auth
-  const service = dashboard.service;
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen flex-col bg-gray-50">
+        <Header />
+        <main className="flex-1 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+          <DashboardSkeleton />
+        </main>
+        <Footer />
+        <ChatWidget />
+      </div>
+    );
+  }
 
+  // Safe data check: if no data or no service plan
+  const dashboard = data;
+  if (!dashboard || !dashboard.service) {
+    return (
+      <div className="flex min-h-screen flex-col bg-gray-50">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center p-8 max-w-md">
+            <h2 className="text-2xl font-bold text-amber-600 mb-4">
+              No Active Service Plan
+            </h2>
+            <p className="text-gray-600 mb-6">
+              We couldn't find any active service plan on your account.
+              Subscribe to get started.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/service-plan">
+                <Button>View Plans</Button>
+              </Link>
+              <Link href="/payment/make-payment">
+                <Button variant="outline">Subscribe Now</Button>
+              </Link>
+            </div>
+          </div>
+        </main>
+        <Footer />
+        <ChatWidget />
+      </div>
+    );
+  }
+
+  // Success: data exists
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
       <Header />
@@ -152,7 +198,11 @@ export default function DashboardPage() {
           <div className="grid md:grid-cols-3 gap-6">
             <UserProfileCard
               userName={dashboard.user.name}
-              loginId={dashboard.user.username ?? dashboard.user.id.toString()}
+              loginId={
+                dashboard.user.username
+                  ? dashboard.user.username
+                  : dashboard.user.id.toString()
+              }
               accountId={dashboard.user.id.toString()}
               lastLogin={dashboard.user.lastLogin}
             />
@@ -170,37 +220,27 @@ export default function DashboardPage() {
             Service
           </h2>
           <div className="grid md:grid-cols-3 gap-6">
-            {service ? (
-              <>
-                <ServicePlanCard
-                  planName={service.plan}
-                  status={service.status}
-                  downloadSpeed={service.download.toString()}
-                  uploadSpeed={service.upload.toString()}
-                />
-                <PlanDatesCard
-                  subscriptionDate={service.from}
-                  expiryDate={service.to}
-                  nextRenewal={service.renewal}
-                  isSuspended={service.status === "suspended"}
-                />
-                <RemainingDaysCard
-                  daysLeft={
-                    typeof service.left === "number"
-                      ? service.left
-                      : parseInt(service.left as string) || 0
-                  }
-                  totalDays={30}
-                />
-              </>
-            ) : (
-              <div className="col-span-3 text-center text-amber-600">
-                No Active Service Plan.{" "}
-                <Link href="/service-plan">
-                  <Button>View Plans</Button>
-                </Link>
-              </div>
-            )}
+            <ServicePlanCard
+              planName={dashboard.service.plan}
+              status={dashboard.service.status}
+              downloadSpeed={dashboard.service.download.toString()}
+              uploadSpeed={dashboard.service.upload.toString()}
+            />
+
+            <PlanDatesCard
+              subscriptionDate={dashboard.service.from}
+              expiryDate={dashboard.service.to}
+              nextRenewal={dashboard.service.renewal}
+              isSuspended={dashboard.service.status === "suspended"}
+            />
+            <RemainingDaysCard
+              daysLeft={
+                typeof dashboard.service.left === "number"
+                  ? dashboard.service.left
+                  : parseInt(dashboard.service.left as string) || 0
+              }
+              totalDays={30}
+            />
           </div>
         </section>
 
@@ -210,13 +250,11 @@ export default function DashboardPage() {
             Payment
           </h2>
           <div className="grid md:grid-cols-2 gap-6">
-            {service && (
-              <PaymentSectionCard
-                planName={service.plan}
-                planExpiry={service.to}
-                isSuspended={service.status === "suspended"}
-              />
-            )}
+            <PaymentSectionCard
+              planName={dashboard.service.plan}
+              planExpiry={dashboard.service.to}
+              isSuspended={dashboard.service.status === "suspended"}
+            />
             <PaymentHistoryCard
               lastPaymentDate={lastPayment?.createdDate ?? null}
               lastPaymentAmount={lastPayment?.amount ?? null}
