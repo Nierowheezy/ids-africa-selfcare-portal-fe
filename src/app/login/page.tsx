@@ -30,14 +30,17 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
-  // Redirect if already logged in
+  // Run checkAuth ONLY once when component mounts
   useEffect(() => {
-    checkAuth(); // Check current auth status
+    checkAuth();
+  }, [checkAuth]);
 
+  // Redirect if already authenticated (after check finishes)
+  useEffect(() => {
     if (isAuthenticated) {
       router.replace("/dashboard");
     }
-  }, [isAuthenticated, checkAuth, router]);
+  }, [isAuthenticated, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,10 +72,10 @@ export default function LoginPage() {
     }, 1500);
   };
 
-  // Show loading while checking auth
-  if (isAuthenticated) {
+  // Show loading spinner while checking auth status on page load
+  if (isLoading && !isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-12 w-12 animate-spin text-red-600" />
       </div>
     );
