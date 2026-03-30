@@ -1,7 +1,7 @@
-// src/app/(protected)/layout.tsx
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
 import { Loader2 } from "lucide-react";
 
@@ -11,9 +11,10 @@ export default function ProtectedLayout({
   children: React.ReactNode;
 }) {
   const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
+  const router = useRouter();
 
   useEffect(() => {
-    checkAuth(); // Try to load user / refresh auth state on mount
+    checkAuth();
   }, [checkAuth]);
 
   if (isLoading) {
@@ -24,7 +25,10 @@ export default function ProtectedLayout({
     );
   }
 
-  // If it's the Paystack callback → render children even if !isAuthenticated
-  // Otherwise → only render if authenticated (middleware already enforced this)
+  if (!isAuthenticated) {
+    router.push("/login");
+    return null;
+  }
+
   return <>{children}</>;
 }
