@@ -59,7 +59,7 @@ export const paymentService = {
   async getHistory(page = 1, limit = 10): Promise<PaymentHistoryResponse> {
     try {
       const response = await api.get<PaymentHistoryResponse>(
-        "/api/payments/history",
+        "/payments/history",
         {
           params: { page, limit },
         },
@@ -102,7 +102,7 @@ export const paymentService = {
 
     try {
       const response = await api.post<PaymentInitResponse>(
-        "/api/payments/initialize",
+        "/payments/initialize",
         {
           amount: Number(amount),
           email: email.trim().toLowerCase(),

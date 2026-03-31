@@ -33,7 +33,7 @@ export const dashboardService = {
    * Fetch complete dashboard data from /api/app/dashboard
    */
   async getDashboard(): Promise<DashboardResponse> {
-    const response = await api.get("/api/app/dashboard");
+    const response = await api.get("/app/dashboard");
 
     if (!response.data?.success) {
       throw new Error(
