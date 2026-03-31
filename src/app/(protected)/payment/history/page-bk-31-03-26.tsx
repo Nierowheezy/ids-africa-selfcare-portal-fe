@@ -40,11 +40,12 @@ import {
   CreditCard,
   Building2,
   ArrowUpDown,
-  AlertTriangle,
-  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
+
+
 
 export default function PaymentHistoryPage() {
   const router = useRouter();
@@ -56,13 +57,12 @@ export default function PaymentHistoryPage() {
 
   const limit = 10;
 
-  const { data, isLoading, isError, error, refetch } =
-    useQuery<PaymentHistoryResponse>({
-      queryKey: ["paymentHistory", page, limit],
-      queryFn: () => paymentService.getHistory(page, limit),
-      retry: 1,
-      staleTime: 5 * 60 * 1000,
-    });
+  const { data, isLoading, isError, error } = useQuery<PaymentHistoryResponse>({
+    queryKey: ["paymentHistory", page, limit],
+    queryFn: () => paymentService.getHistory(page, limit),
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+  });
 
   // Handle 401 (session expired)
   if (isError && (error as any)?.response?.status === 401) {
@@ -75,47 +75,31 @@ export default function PaymentHistoryPage() {
     return null;
   }
 
-  // === Payment History Unavailable (CRM failed) - Clean Fallback ===
-  if (isError || !data?.success) {
+  // General error fallback (network error, timeout, 500, etc.)
+  if (isError) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50">
         <Header />
-        <main className="flex-1 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-          {/* Breadcrumb */}
-          <div className="mb-8 flex items-center space-x-2 text-sm">
-            <Link
-              href="/dashboard"
-              className="text-red-600 hover:text-red-700 font-medium transition-colors"
-            >
-              Dashboard
-            </Link>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
-            <span className="text-gray-600">Payment History</span>
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center p-8 max-w-md">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-red-600 mb-4">
+              Failed to load payment history
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {(error as any)?.message ||
+                "Something went wrong. Please try again."}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button onClick={() => window.location.reload()}>Retry</Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push("/dashboard")}
+              >
+                Back to Dashboard
+              </Button>
+            </div>
           </div>
-
-          <Card className="shadow-sm max-w-2xl mx-auto">
-            <CardContent className="p-12 text-center">
-              <AlertTriangle className="h-16 w-16 text-gray-400 mx-auto mb-6" />
-              <h2 className="text-2xl font-heading font-semibold text-gray-900 mb-3">
-                Payment History Unavailable
-              </h2>
-              <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                We couldn't load your payment history right now.
-                <br />
-                This is usually temporary while we connect to our payment
-                system.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button onClick={() => refetch()} className="gap-2">
-                  <RefreshCw className="h-4 w-4" />
-                  Refresh Page
-                </Button>
-                <Link href="/dashboard">
-                  <Button variant="outline">Back to Dashboard</Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
         </main>
         <Footer />
         <ChatWidget />
