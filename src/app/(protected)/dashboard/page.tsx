@@ -205,20 +205,19 @@ export default function DashboardPage() {
         </section>
 
         {/* Service Section */}
-
         <section className="mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
           <h2 className="text-2xl font-heading font-bold text-gray-900 mb-6">
             Service
           </h2>
 
           {dashboard?.service?.plan === "Service Information Unavailable" ? (
-            <Card className="shadow-sm border-amber-200 bg-amber-50">
+            <Card className="shadow-sm">
               <CardContent className="p-8 text-center">
-                <AlertCircle className="h-12 w-12 text-amber-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-amber-700 mb-2">
+                <AlertCircle className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">
                   Service Information Unavailable
                 </h3>
-                <p className="text-amber-600 mb-6">
+                <p className="text-gray-600 mb-6">
                   We couldn't retrieve your current service details right now.
                   <br />
                   This is usually temporary while we connect to our network
@@ -226,6 +225,7 @@ export default function DashboardPage() {
                 </p>
                 <Button
                   onClick={() => window.location.reload()}
+                  variant="outline"
                   className="gap-2"
                 >
                   <RefreshCw className="h-4 w-4" />
@@ -261,7 +261,6 @@ export default function DashboardPage() {
         </section>
 
         {/* Payment Section */}
-        {/* Payment Section */}
         <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
           <h2 className="text-2xl font-heading font-bold text-gray-900 mb-6">
             Payment
@@ -282,13 +281,13 @@ export default function DashboardPage() {
                 creditAmount={lastPayment.creditAmount}
               />
             ) : (
-              <Card className="shadow-sm border-amber-200 bg-amber-50">
+              <Card className="shadow-sm">
                 <CardContent className="p-8 text-center">
-                  <AlertCircle className="h-12 w-12 text-amber-600 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-amber-700 mb-2">
+                  <AlertCircle className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-700 mb-2">
                     Payment History Unavailable
                   </h3>
-                  <p className="text-amber-600 mb-6">
+                  <p className="text-gray-600 mb-6">
                     We couldn't load your recent payment history right now.
                     <br />
                     This is usually temporary.
