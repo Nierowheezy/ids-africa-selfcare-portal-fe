@@ -18,7 +18,6 @@ import {
   Clock,
   ArrowRight,
   AlertTriangle,
-  RefreshCw,
 } from "lucide-react";
 import { dashboardService } from "@/services/dashboardService";
 import { DashboardResponse } from "@/types";
@@ -45,7 +44,7 @@ export default function ServicePlanPage() {
     return null;
   }
 
-  // General error fallback
+  // General error fallback (network error, timeout, 500, etc.)
   if (isError) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50">
@@ -87,53 +86,30 @@ export default function ServicePlanPage() {
     );
   }
 
+  // Safe data check: no data or no service plan
   const service = data?.service;
-
-  // === Safe Unavailable Check (No TypeScript error) ===
-  if (!service || service.plan === "Service Information Unavailable") {
+  if (!service) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50">
         <Header />
-        <main className="flex-1 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-          {/* Breadcrumb */}
-          <div className="mb-8 flex items-center space-x-2 text-sm animate-in fade-in duration-300">
-            <Link
-              href="/dashboard"
-              className="text-red-600 hover:text-red-700 font-medium transition-colors"
-            >
-              Dashboard
-            </Link>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
-            <span className="text-gray-600">Service Plan</span>
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center p-8 max-w-md">
+            <h2 className="text-2xl font-bold text-amber-600 mb-4">
+              No Active Service Plan
+            </h2>
+            <p className="text-gray-600 mb-6">
+              We couldn't find any active service plan on your account.
+              Subscribe to get started.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/payment/make-payment">
+                <Button>Subscribe Now</Button>
+              </Link>
+              <Link href="/dashboard">
+                <Button variant="outline">Back to Dashboard</Button>
+              </Link>
+            </div>
           </div>
-
-          <Card className="shadow-sm max-w-2xl mx-auto">
-            <CardContent className="p-12 text-center">
-              <AlertTriangle className="h-16 w-16 text-gray-400 mx-auto mb-6" />
-              <h2 className="text-2xl font-heading font-semibold text-gray-900 mb-3">
-                Service Information Unavailable
-              </h2>
-              <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                We couldn't retrieve your current service plan details right
-                now.
-                <br />
-                This is usually temporary while we connect to our network
-                system.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button
-                  onClick={() => window.location.reload()}
-                  className="gap-2"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Refresh Page
-                </Button>
-                <Link href="/dashboard">
-                  <Button variant="outline">Back to Dashboard</Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
         </main>
         <Footer />
         <ChatWidget />
@@ -141,16 +117,12 @@ export default function ServicePlanPage() {
     );
   }
 
-  // Success: Real service data
+  // Success: service exists
   const planData = {
     planName: service.plan || "N/A",
-    status: (service.status || "inactive") as
-      | "active"
-      | "suspended"
-      | "ended"
-      | "inactive",
-    downloadSpeed: service.download?.toString() || "0",
-    uploadSpeed: service.upload?.toString() || "0",
+    status: (service.status || "unknown") as "active" | "suspended" | "unknown",
+    downloadSpeed: service.download?.toString() || "N/A",
+    uploadSpeed: service.upload?.toString() || "N/A",
     subscriptionDate: service.from || "N/A",
     expiryDate: service.to || "N/A",
     nextRenewal: service.renewal || "N/A",
@@ -169,44 +141,58 @@ export default function ServicePlanPage() {
     Math.min(100, (planData.remainingDays / TOTAL_DAYS) * 100),
   );
 
+  // NEW LOGIC:
+  // - Badge & status always green when "active" (ignore days left)
+  // - Time Remaining section: green if >7 days, red if ≤7 days (urgency)
   const isActive = planData.status === "active";
 
-  const isExpiredOrSuspended =
-    planData.status === "suspended" ||
-    planData.status === "ended" ||
-    planData.remainingDays <= 0;
-
   const progressColor =
-    isExpiredOrSuspended || planData.remainingDays <= 7
+    planData.remainingDays <= 0 || planData.status === "suspended"
       ? "bg-red-600"
-      : "bg-green-600";
+      : planData.remainingDays <= 7
+        ? "bg-red-600"
+        : "bg-green-600";
 
   const cardBgClass =
-    isExpiredOrSuspended || planData.remainingDays <= 7
+    planData.remainingDays <= 0 || planData.status === "suspended"
       ? "bg-gradient-to-br from-red-50 to-red-100 border-red-200"
-      : "bg-gradient-to-br from-green-50 to-green-100 border-green-200";
+      : planData.remainingDays <= 7
+        ? "bg-gradient-to-br from-red-50 to-red-100 border-red-200"
+        : "bg-gradient-to-br from-green-50 to-green-100 border-green-200";
 
   const iconBgClass =
-    isExpiredOrSuspended || planData.remainingDays <= 7
+    planData.remainingDays <= 0 || planData.status === "suspended"
       ? "bg-red-600"
-      : "bg-green-600";
+      : planData.remainingDays <= 7
+        ? "bg-red-600"
+        : "bg-green-600";
 
   const textColorClass =
-    isExpiredOrSuspended || planData.remainingDays <= 7
+    planData.remainingDays <= 0 || planData.status === "suspended"
       ? "text-red-900"
-      : "text-green-900";
+      : planData.remainingDays <= 7
+        ? "text-red-900"
+        : "text-green-900";
 
   const badgeClass = isActive
     ? "bg-green-100 text-green-700 hover:bg-green-100 text-base px-4 py-1"
     : "bg-red-100 text-red-700 hover:bg-red-100 text-base px-4 py-1";
 
   const getRemainingDaysText = () => {
-    if (planData.remainingDays > 1)
+    if (planData.remainingDays > 1) {
       return `${planData.remainingDays} days left`;
-    if (planData.remainingDays === 1) return "Expires tomorrow";
-    if (planData.remainingDays === 0) return "Expires today";
+    }
+    if (planData.remainingDays === 1) {
+      return "Expires tomorrow";
+    }
+    if (planData.remainingDays === 0) {
+      return "Expires today";
+    }
     return "Expired";
   };
+
+  const isExpiredOrSuspended =
+    planData.status === "suspended" || planData.remainingDays <= 0;
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
@@ -271,6 +257,7 @@ export default function ServicePlanPage() {
                       )}
                     </div>
 
+                    {/* Progress Bar */}
                     <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                       <div
                         className={`h-full transition-all duration-500 ${progressColor}`}
