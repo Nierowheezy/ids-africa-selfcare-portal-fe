@@ -7,7 +7,7 @@ const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "/api",
   withCredentials: true,
   headers: {
-    "Content-Type": "application/json", // ← This is the correct one
+    "Content-Type": "application/json",
   },
   timeout: 15000,
 });
@@ -23,25 +23,21 @@ api.interceptors.response.use(
       error.message ||
       "Something went wrong";
 
-    // Check if we are currently on the login page
     const isOnLoginPage =
       typeof window !== "undefined" && window.location.pathname === "/login";
 
     if (status === 401) {
       if (!isOnLoginPage) {
         useAuthStore.getState().forceLogout();
-
         toast({
           variant: "destructive",
           title: "Session Expired",
           description: "Please log in again.",
         });
       } else {
-        // Silent clear on login page (no toast)
-        useAuthStore.getState().forceLogout();
+        useAuthStore.getState().forceLogout(); // silent on login page
       }
     } else if (status !== 404 && status !== 400 && status !== 401) {
-      // Show toast for other real server errors
       toast({
         variant: "destructive",
         title: "Error",

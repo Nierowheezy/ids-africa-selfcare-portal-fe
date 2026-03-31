@@ -30,12 +30,12 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
-  // Run checkAuth ONLY once when component mounts
+  // 1. Check auth status only once when page loads
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
-  // Redirect if already authenticated
+  // 2. Redirect if user is already logged in
   useEffect(() => {
     if (isAuthenticated) {
       router.replace("/dashboard");
@@ -47,6 +47,7 @@ export default function LoginPage() {
     clearError();
 
     try {
+      // This will set isLoading = true inside the store
       await login(accountNumber.trim(), password);
 
       toast({
@@ -54,10 +55,11 @@ export default function LoginPage() {
         description: "Welcome back!",
       });
 
+      // Immediately redirect after successful login
       router.replace("/dashboard");
     } catch (err: any) {
       console.error("Login failed:", err);
-      // Error is already handled by the authStore and api interceptor
+      // No need to do anything here — error is shown via the store + interceptor
     }
   };
 
@@ -73,7 +75,9 @@ export default function LoginPage() {
     }, 1500);
   };
 
-  // Show full-screen loading while checking auth status on initial page load
+  // Show loading spinner in these cases:
+  // - Initial auth check (checkAuth)
+  // - During login attempt
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -142,7 +146,7 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-auto h-11 bg-red-600 hover:bg-red-700 text-white font-ui text-base transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full h-11 bg-red-600 hover:bg-red-700 text-white font-ui text-base transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   {isLoading ? (
                     <>
