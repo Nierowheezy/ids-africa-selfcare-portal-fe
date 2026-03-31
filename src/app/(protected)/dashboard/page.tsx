@@ -261,6 +261,7 @@ export default function DashboardPage() {
         </section>
 
         {/* Payment Section */}
+        {/* Payment Section */}
         <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
           <h2 className="text-2xl font-heading font-bold text-gray-900 mb-6">
             Payment
@@ -271,13 +272,38 @@ export default function DashboardPage() {
               planExpiry={dashboard.service.to}
               isSuspended={dashboard.service.status === "suspended"}
             />
-            <PaymentHistoryCard
-              lastPaymentDate={lastPayment?.createdDate ?? null}
-              lastPaymentAmount={lastPayment?.amount ?? null}
-              methodId={lastPayment?.methodId ?? null}
-              note={lastPayment?.note ?? null}
-              creditAmount={lastPayment?.creditAmount ?? null}
-            />
+
+            {lastPayment ? (
+              <PaymentHistoryCard
+                lastPaymentDate={lastPayment.createdDate}
+                lastPaymentAmount={lastPayment.amount}
+                methodId={lastPayment.methodId}
+                note={lastPayment.note}
+                creditAmount={lastPayment.creditAmount}
+              />
+            ) : (
+              <Card className="shadow-sm border-amber-200 bg-amber-50">
+                <CardContent className="p-8 text-center">
+                  <AlertCircle className="h-12 w-12 text-amber-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-amber-700 mb-2">
+                    Payment History Unavailable
+                  </h3>
+                  <p className="text-amber-600 mb-6">
+                    We couldn't load your recent payment history right now.
+                    <br />
+                    This is usually temporary.
+                  </p>
+                  <Button
+                    onClick={() => window.location.reload()}
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Refresh Page
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </section>
       </main>
