@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation"; // ← added useRouter
 import { Menu, X, ChevronDown, Bell } from "lucide-react";
 import {
   DropdownMenu,
@@ -19,7 +19,7 @@ import { useAuthStore } from "@/stores/authStore";
 
 export function Header() {
   const { user, isAuthenticated, logout } = useAuthStore();
-  const router = useRouter();
+  const router = useRouter(); // ← added for redirect after logout
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const [notificationCount] = useState(3);
@@ -27,23 +27,14 @@ export function Header() {
   const isActive = (path: string) => pathname === path;
   const isPaymentActive = pathname?.startsWith("/payment");
 
-  // Improved Logout Handler
   const handleLogout = async () => {
     try {
-      // Call backend logout to clear cookies
-      await logout();
-
-      // Force clear any remaining state and redirect
-      router.replace("/login"); // Use replace instead of push to avoid back button issues
+      await logout(); // clears cookies + resets store
+      router.push("/login"); // ← redirect to login page
+      router.refresh(); // optional: force refresh any server components
     } catch (err) {
       console.error("Logout failed:", err);
-
-      // Even if backend fails, still clear local state and redirect
-      useAuthStore.getState().forceLogout();
-      router.replace("/login");
-    } finally {
-      // Close mobile menu if open
-      setMobileMenuOpen(false);
+      // Optional: add toast error here later if needed
     }
   };
 
@@ -241,7 +232,7 @@ export function Header() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="cursor-pointer text-red-600"
-                      onClick={handleLogout}
+                      onClick={handleLogout} // ← now calls function with redirect
                     >
                       Logout
                     </DropdownMenuItem>
@@ -365,7 +356,7 @@ export function Header() {
                 </div>
                 <button
                   onClick={() => {
-                    handleLogout();
+                    handleLogout(); // ← calls function with redirect
                     setMobileMenuOpen(false);
                   }}
                   className="px-4 py-3 text-sm font-ui font-medium text-red-600 hover:bg-red-50 rounded-md block w-full text-left"

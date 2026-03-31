@@ -35,7 +35,7 @@ export default function LoginPage() {
     checkAuth();
   }, [checkAuth]);
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated (after check finishes)
   useEffect(() => {
     if (isAuthenticated) {
       router.replace("/dashboard");
@@ -57,7 +57,6 @@ export default function LoginPage() {
       router.replace("/dashboard");
     } catch (err: any) {
       console.error("Login failed:", err);
-      // Error is already handled by the authStore and api interceptor
     }
   };
 
@@ -73,8 +72,8 @@ export default function LoginPage() {
     }, 1500);
   };
 
-  // Show full-screen loading while checking auth status on initial page load
-  if (isLoading) {
+  // Show loading spinner while checking auth status on page load
+  if (isLoading && !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-12 w-12 animate-spin text-red-600" />
