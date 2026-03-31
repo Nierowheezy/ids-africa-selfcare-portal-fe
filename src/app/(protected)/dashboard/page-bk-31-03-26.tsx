@@ -23,7 +23,6 @@ import { dashboardService } from "@/services/dashboardService";
 import { paymentService } from "@/services/paymentService";
 import { DashboardResponse } from "@/types";
 import Link from "next/link";
-import { AlertCircle, RefreshCw } from "lucide-react";
 
 function DashboardSkeleton() {
   return (
@@ -85,13 +84,15 @@ function DashboardSkeleton() {
 export default function DashboardPage() {
   const router = useRouter();
 
+  // Main dashboard data from /api/app/dashboard
   const { data, isLoading, isError, error } = useQuery<DashboardResponse>({
     queryKey: ["dashboard"],
     queryFn: dashboardService.getDashboard,
     retry: 1,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
+  // Real last payment (separate lightweight query)
   const { data: lastPayment } = useQuery({
     queryKey: ["lastPayment"],
     queryFn: paymentService.getLastPayment,
@@ -110,7 +111,7 @@ export default function DashboardPage() {
     return null;
   }
 
-  // General error fallback
+  // General error fallback (network error, timeout, 500, etc.)
   if (isError) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50">
@@ -152,21 +153,29 @@ export default function DashboardPage() {
     );
   }
 
-  // Safe guard: data should exist at this point, but TypeScript needs help
+  // Safe data check: if no data or no service plan
   const dashboard = data;
-  if (!dashboard || !dashboard.user) {
+  if (!dashboard || !dashboard.service) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center p-8 max-w-md">
             <h2 className="text-2xl font-bold text-amber-600 mb-4">
-              No Dashboard Data
+              No Active Service Plan
             </h2>
             <p className="text-gray-600 mb-6">
-              We couldn't load your dashboard information.
+              We couldn't find any active service plan on your account.
+              Subscribe to get started.
             </p>
-            <Button onClick={() => window.location.reload()}>Retry</Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/service-plan">
+                <Button>View Plans</Button>
+              </Link>
+              <Link href="/payment/make-payment">
+                <Button variant="outline">Subscribe Now</Button>
+              </Link>
+            </div>
           </div>
         </main>
         <Footer />
@@ -175,6 +184,7 @@ export default function DashboardPage() {
     );
   }
 
+  // Success: data exists
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
       <Header />
@@ -209,54 +219,29 @@ export default function DashboardPage() {
           <h2 className="text-2xl font-heading font-bold text-gray-900 mb-6">
             Service
           </h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            <ServicePlanCard
+              planName={dashboard.service.plan}
+              status={dashboard.service.status}
+              downloadSpeed={dashboard.service.download.toString()}
+              uploadSpeed={dashboard.service.upload.toString()}
+            />
 
-          {dashboard.service?.plan === "Service Information Unavailable" ? (
-            <Card className="shadow-sm border-amber-200 bg-amber-50">
-              <CardContent className="p-8 text-center">
-                <AlertCircle className="h-12 w-12 text-amber-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-amber-700 mb-2">
-                  Service Information Unavailable
-                </h3>
-                <p className="text-amber-600 mb-6">
-                  We couldn't retrieve your current service details right now.
-                  <br />
-                  This is usually temporary while we connect to our network
-                  system.
-                </p>
-                <Button
-                  onClick={() => window.location.reload()}
-                  className="gap-2"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Refresh Page
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid md:grid-cols-3 gap-6">
-              <ServicePlanCard
-                planName={dashboard.service.plan}
-                status={dashboard.service.status}
-                downloadSpeed={dashboard.service.download.toString()}
-                uploadSpeed={dashboard.service.upload.toString()}
-              />
-
-              <PlanDatesCard
-                subscriptionDate={dashboard.service.from}
-                expiryDate={dashboard.service.to}
-                nextRenewal={dashboard.service.renewal}
-                isSuspended={dashboard.service.status === "suspended"}
-              />
-              <RemainingDaysCard
-                daysLeft={
-                  typeof dashboard.service.left === "number"
-                    ? dashboard.service.left
-                    : parseInt(dashboard.service.left as string) || 0
-                }
-                totalDays={30}
-              />
-            </div>
-          )}
+            <PlanDatesCard
+              subscriptionDate={dashboard.service.from}
+              expiryDate={dashboard.service.to}
+              nextRenewal={dashboard.service.renewal}
+              isSuspended={dashboard.service.status === "suspended"}
+            />
+            <RemainingDaysCard
+              daysLeft={
+                typeof dashboard.service.left === "number"
+                  ? dashboard.service.left
+                  : parseInt(dashboard.service.left as string) || 0
+              }
+              totalDays={30}
+            />
+          </div>
         </section>
 
         {/* Payment Section */}
