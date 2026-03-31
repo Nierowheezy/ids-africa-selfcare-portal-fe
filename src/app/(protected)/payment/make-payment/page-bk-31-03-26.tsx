@@ -19,11 +19,10 @@ import {
   CheckCircle2,
   Copy,
   AlertTriangle,
-  RefreshCw,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { dashboardService } from "@/services/dashboardService";
-import { paymentService } from "@/services/paymentService";
+import { paymentService } from "@/services/paymentService"; // ← payment integration
 
 export default function MakePaymentPage() {
   const router = useRouter();
@@ -32,79 +31,16 @@ export default function MakePaymentPage() {
     "paystack" | "bank_transfer"
   >("paystack");
 
-  // Fetch dashboard data (user + service)
+  // Fetch real user & service data from backend
   const {
     data,
     isLoading: isDataLoading,
     error,
-    refetch,
   } = useQuery({
     queryKey: ["dashboard"],
     queryFn: dashboardService.getDashboard,
     staleTime: 5 * 60 * 1000,
   });
-
-  // Handle 401
-  if (error && (error as any)?.response?.status === 401) {
-    toast({
-      variant: "destructive",
-      title: "Session Expired",
-      description: "Please log in again.",
-    });
-    router.push("/login");
-    return null;
-  }
-
-  // === Service Unavailable State (Clean Fallback) ===
-  const service = data?.service;
-  if (
-    !isDataLoading &&
-    (service?.plan === "Service Information Unavailable" || !service)
-  ) {
-    return (
-      <div className="flex min-h-screen flex-col bg-gray-50">
-        <Header />
-        <main className="flex-1 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-          <div className="mb-8 flex items-center space-x-2 text-sm">
-            <Link
-              href="/dashboard"
-              className="text-red-600 hover:text-red-700 font-medium transition-colors"
-            >
-              Dashboard
-            </Link>
-            <ChevronRight className="h-4 w-4 text-gray-400" />
-            <span className="text-gray-600">Make Payment</span>
-          </div>
-
-          <Card className="shadow-sm max-w-2xl mx-auto">
-            <CardContent className="p-12 text-center">
-              <AlertTriangle className="h-16 w-16 text-gray-400 mx-auto mb-6" />
-              <h2 className="text-2xl font-heading font-semibold text-gray-900 mb-3">
-                Service Information Unavailable
-              </h2>
-              <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                We couldn't retrieve your current service plan and pricing right
-                now.
-                <br />
-                This is usually temporary. Please refresh and try again.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button onClick={() => refetch()} className="gap-2">
-                  <RefreshCw className="h-4 w-4" />
-                  Refresh Page
-                </Button>
-                <Link href="/dashboard">
-                  <Button variant="outline">Back to Dashboard</Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        </main>
-        <Footer />
-        <ChatWidget />
-      </div>
-    );
-  }
 
   if (isDataLoading) {
     return (
@@ -154,13 +90,13 @@ export default function MakePaymentPage() {
   }
 
   const user = data.user;
-  const serviceData = data.service;
+  const service = data.service;
 
   const formData = {
     firstName: user.name?.split(" ")[0] || "N/A",
     lastName: user.name?.split(" ").slice(1).join(" ") || "N/A",
     email: user.email || "N/A",
-    amount: "12000", // TODO: In future, replace with real dynamic amount from service
+    amount: "12000", // TODO: Replace with real plan price
     accountNumber: user.id?.toString() || "N/A",
   };
 
@@ -277,7 +213,7 @@ export default function MakePaymentPage() {
                       </Label>
                       <Input
                         id="amount"
-                        value={`₦${parseInt(formData.amount).toLocaleString()}`}
+                        value={formData.amount}
                         disabled
                         className="h-12 border-gray-200 bg-gray-100 cursor-not-allowed"
                       />
@@ -307,11 +243,7 @@ export default function MakePaymentPage() {
                       <button
                         type="button"
                         onClick={() => setSelectedMethod("paystack")}
-                        className={`relative p-4 border-2 rounded-lg transition-all duration-200 ${
-                          selectedMethod === "paystack"
-                            ? "border-red-500 bg-red-50"
-                            : "border-gray-200 hover:border-gray-300 bg-white"
-                        }`}
+                        className={`relative p-4 border-2 rounded-lg transition-all duration-200 ${selectedMethod === "paystack" ? "border-red-500 bg-red-50" : "border-gray-200 hover:border-gray-300 bg-white"}`}
                       >
                         {selectedMethod === "paystack" && (
                           <CheckCircle2 className="absolute top-3 right-3 h-5 w-5 text-red-600" />
@@ -334,11 +266,7 @@ export default function MakePaymentPage() {
                       <button
                         type="button"
                         onClick={() => setSelectedMethod("bank_transfer")}
-                        className={`relative p-4 border-2 rounded-lg transition-all duration-200 ${
-                          selectedMethod === "bank_transfer"
-                            ? "border-red-500 bg-red-50"
-                            : "border-gray-200 hover:border-gray-300 bg-white"
-                        }`}
+                        className={`relative p-4 border-2 rounded-lg transition-all duration-200 ${selectedMethod === "bank_transfer" ? "border-red-500 bg-red-50" : "border-gray-200 hover:border-gray-300 bg-white"}`}
                       >
                         {selectedMethod === "bank_transfer" && (
                           <CheckCircle2 className="absolute top-3 right-3 h-5 w-5 text-red-600" />
@@ -391,12 +319,12 @@ export default function MakePaymentPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="border-b pb-6">
-                  <p className="text-sm text-gray-500 mb-1">Plan</p>
+                  <p className="text-sm text-gray-500 mb-1">plan</p>
                   <h3 className="text-2xl font-heading font-bold text-gray-900 mb-3">
-                    {serviceData?.plan || "N/A"}
+                    {service?.plan || "N/A"}
                   </h3>
                   <p className="text-sm text-gray-600">
-                    Bandwidth: upload 10 - download 10
+                    Bandwidth: upload: 10 - download: 10
                   </p>
                 </div>
 
@@ -483,7 +411,9 @@ export default function MakePaymentPage() {
                       <p className="font-medium">Next Steps:</p>
                       <ul className="list-disc pl-5 mt-2 space-y-1">
                         <li>Include your User ID in the narration</li>
-                        <li>Send proof to helpdesk@ids-africa.com</li>
+                        <li>
+                          Send proof to <strong>helpdesk@ids-africa.com</strong>
+                        </li>
                         <li>Or WhatsApp: +234 913 504 6353</li>
                       </ul>
                     </div>
