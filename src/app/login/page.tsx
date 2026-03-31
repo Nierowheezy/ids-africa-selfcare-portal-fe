@@ -30,12 +30,12 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
-  // 1. Check auth status only once when page loads
+  // Initial auth check on mount
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
-  // 2. Redirect if user is already logged in
+  // Redirect immediately when authenticated
   useEffect(() => {
     if (isAuthenticated) {
       router.replace("/dashboard");
@@ -47,19 +47,19 @@ export default function LoginPage() {
     clearError();
 
     try {
-      // This will set isLoading = true inside the store
       await login(accountNumber.trim(), password);
 
+      // Success toast
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
 
-      // Immediately redirect after successful login
+      // Force immediate redirect - no waiting for re-render
       router.replace("/dashboard");
     } catch (err: any) {
       console.error("Login failed:", err);
-      // No need to do anything here — error is shown via the store + interceptor
+      // Error handling is done by the store and api interceptor
     }
   };
 
@@ -75,10 +75,11 @@ export default function LoginPage() {
     }, 1500);
   };
 
-  // Show loading spinner in these cases:
-  // - Initial auth check (checkAuth)
-  // - During login attempt
-  if (isLoading) {
+  // Show loading spinner during:
+  // 1. Initial page load (checkAuth)
+  // 2. Login attempt
+  // 3. If somehow authenticated but still on this page
+  if (isLoading || isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="h-12 w-12 animate-spin text-red-600" />

@@ -11,7 +11,7 @@ interface AuthState {
 
   login: (accountNumber: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  forceLogout: () => void;
+  forceLogout: () => void; // ← new: instant clear for 401
   checkAuth: () => Promise<void>;
   clearError: () => void;
 }
@@ -24,25 +24,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   login: async (accountNumber: string, password: string) => {
     set({ isLoading: true, error: null });
-
     try {
       const user = await authService.login(accountNumber, password);
-
-      // Set authenticated state WITHOUT turning off loading yet
-      // This prevents the form from flashing
-      set({
-        user,
-        isAuthenticated: true,
-        // Keep isLoading: true until redirect happens
-        isLoading: true,
-      });
+      set({ user, isAuthenticated: true, isLoading: false });
     } catch (err: any) {
       const message = err.message || "Login failed. Please try again.";
-      set({
-        error: message,
-        isLoading: false,
-        isAuthenticated: false,
-      });
+      set({ error: message, isLoading: false });
       throw err;
     }
   },
@@ -50,10 +37,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     set({ isLoading: true });
     try {
-      await authService.logout();
+      await authService.logout(); // calls /logout endpoint to clear server cookies
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+      });
     } catch (err) {
-      console.error("Logout failed:", err);
-    } finally {
+      // Even if /logout fails, still clear local state
       set({
         user: null,
         isAuthenticated: false,
@@ -63,6 +55,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  // New: instant clear for 401 cases (no async, no await)
   forceLogout: () => {
     set({
       user: null,
@@ -82,12 +75,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
       });
     } catch {
-      // Silent fail on checkAuth (no user = not authenticated)
-      set({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-      });
+      // On checkAuth fail (e.g. 401), force clear
+      get().forceLogout();
     }
   },
 
