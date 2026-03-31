@@ -172,11 +172,17 @@ export default function ProfilePage() {
                       className={`${
                         profileData.serviceStatus === "active"
                           ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
+                          : profileData.serviceStatus === "unknown" ||
+                              !profileData.serviceStatus
+                            ? "bg-gray-100 text-gray-600"
+                            : "bg-red-100 text-red-700"
                       } hover:opacity-90`}
                     >
-                      {profileData.serviceStatus.charAt(0).toUpperCase() +
-                        profileData.serviceStatus.slice(1)}
+                      {profileData.serviceStatus === "unknown" ||
+                      !profileData.serviceStatus
+                        ? "Service Unavailable"
+                        : profileData.serviceStatus.charAt(0).toUpperCase() +
+                          profileData.serviceStatus.slice(1)}
                     </Badge>
                   </div>
                   <p className="text-sm text-gray-600">
