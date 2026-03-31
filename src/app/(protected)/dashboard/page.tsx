@@ -205,16 +205,13 @@ export default function DashboardPage() {
         </section>
 
         {/* Service Section */}
-        {/* Service Section */}
-        {/* Service Section - DEBUG VERSION */}
+
         <section className="mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
           <h2 className="text-2xl font-heading font-bold text-gray-900 mb-6">
             Service
           </h2>
 
-          {dashboard?.service?.plan === "Service Information Unavailable" ||
-          dashboard?.service?.plan === "No active plan" ||
-          dashboard?.service?.plan?.includes("Unavailable") ? (
+          {dashboard?.service?.plan === "Service Information Unavailable" ? (
             <Card className="shadow-sm border-amber-200 bg-amber-50">
               <CardContent className="p-8 text-center">
                 <AlertCircle className="h-12 w-12 text-amber-600 mx-auto mb-4" />
