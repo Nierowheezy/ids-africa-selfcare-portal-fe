@@ -7,12 +7,12 @@ const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "/api",
   withCredentials: true,
   headers: {
-    "Content-Type": "json",
+    "Content-Type": "application/json", // ← This is the correct one
   },
   timeout: 15000,
 });
 
-// Response interceptor: catch 401 globally and clear auth state
+// Response interceptor
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -28,8 +28,6 @@ api.interceptors.response.use(
       typeof window !== "undefined" && window.location.pathname === "/login";
 
     if (status === 401) {
-      // Do NOT show "Session Expired" toast if user is on the login page
-      // (they simply don't have a session yet)
       if (!isOnLoginPage) {
         useAuthStore.getState().forceLogout();
 
@@ -39,11 +37,11 @@ api.interceptors.response.use(
           description: "Please log in again.",
         });
       } else {
-        // Just clear the auth state silently on login page
+        // Silent clear on login page (no toast)
         useAuthStore.getState().forceLogout();
       }
     } else if (status !== 404 && status !== 400 && status !== 401) {
-      // Show toast for other server errors (exclude 404, 400, and 401 which we handled)
+      // Show toast for other real server errors
       toast({
         variant: "destructive",
         title: "Error",
