@@ -99,7 +99,7 @@ export default function DashboardPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Handle 401 (session expired) - Highest priority
+  // Handle 401 (session expired)
   if (isError && (error as any)?.response?.status === 401) {
     toast({
       variant: "destructive",
@@ -110,7 +110,7 @@ export default function DashboardPage() {
     return null;
   }
 
-  // General error fallback (after loading attempt)
+  // General error fallback
   if (isError) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50">
@@ -138,9 +138,8 @@ export default function DashboardPage() {
     );
   }
 
-  // Improved Loading state: Show skeleton while loading OR while data is not yet available
-  // This prevents flashing "No Dashboard Data" on initial render
-  if (isLoading || !data) {
+  // Loading state
+  if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50">
         <Header />
@@ -153,7 +152,7 @@ export default function DashboardPage() {
     );
   }
 
-  // Safe guard: data should exist at this point (kept your original safeguard)
+  // Safe guard: data should exist at this point, but TypeScript needs help
   const dashboard = data;
   if (!dashboard || !dashboard.user) {
     return (

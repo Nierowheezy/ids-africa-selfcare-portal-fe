@@ -3,18 +3,8 @@ import axios from "axios";
 import { toast } from "@/components/ui/use-toast";
 import { useAuthStore } from "@/stores/authStore";
 
-const getBaseURL = () => {
-  // Local development
-  if (process.env.NODE_ENV === "development") {
-    return "http://localhost:8001/api"; // ← Added /api here
-  }
-
-  // Production (uses your Vercel rewrite)
-  return "/api";
-};
-
 const api = axios.create({
-  baseURL: getBaseURL(),
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "/api",
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
@@ -45,7 +35,7 @@ api.interceptors.response.use(
           description: "Please log in again.",
         });
       } else {
-        useAuthStore.getState().forceLogout();
+        useAuthStore.getState().forceLogout(); // silent on login page
       }
     } else if (status !== 404 && status !== 400 && status !== 401) {
       toast({

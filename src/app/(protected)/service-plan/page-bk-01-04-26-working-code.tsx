@@ -34,7 +34,7 @@ export default function ServicePlanPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Handle 401 (session expired) - Highest priority
+  // Handle 401 (session expired)
   if (isError && (error as any)?.response?.status === 401) {
     toast({
       variant: "destructive",
@@ -73,9 +73,8 @@ export default function ServicePlanPage() {
     );
   }
 
-  // Improved Loading state: Show skeleton while loading OR while data is not yet available
-  // This prevents flashing the "Service Information Unavailable" screen on initial render
-  if (isLoading || !data) {
+  // Loading state
+  if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50">
         <Header />
@@ -91,7 +90,6 @@ export default function ServicePlanPage() {
   const service = data?.service;
 
   // === Safe Unavailable Check (No TypeScript error) ===
-  // This will still show "Service Information Unavailable" when the backend returns it
   if (!service || service.plan === "Service Information Unavailable") {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50">

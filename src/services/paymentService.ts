@@ -42,6 +42,9 @@ export interface PaymentInitSuccessResponse {
     access_code: string;
     reference: string;
     internal_reference?: string;
+    message?: string; // Support for "You have a pending payment..." message
+    amount?: number;
+    currency?: string;
   };
 }
 
@@ -56,6 +59,9 @@ export type PaymentInitResponse =
   | PaymentInitErrorResponse;
 
 export const paymentService = {
+  /**
+   * Get payment history from UCRM
+   */
   async getHistory(page = 1, limit = 10): Promise<PaymentHistoryResponse> {
     try {
       const response = await api.get<PaymentHistoryResponse>(
@@ -79,6 +85,9 @@ export const paymentService = {
     }
   },
 
+  /**
+   * Get the most recent payment
+   */
   async getLastPayment(): Promise<Payment | null> {
     try {
       const history = await paymentService.getHistory(1, 1);
@@ -88,6 +97,9 @@ export const paymentService = {
     }
   },
 
+  /**
+   * Initialize Paystack Payment (with pending payment reuse support)
+   */
   async initializePayment(
     amount: number,
     email: string,
@@ -116,7 +128,14 @@ export const paymentService = {
         );
       }
 
-      return (response.data as PaymentInitSuccessResponse).data;
+      const result = (response.data as PaymentInitSuccessResponse).data;
+
+      // Log reuse case for debugging
+      if (result.message) {
+        console.info("[Payment Reuse]", result.message);
+      }
+
+      return result;
     } catch (error: any) {
       const errorMsg =
         error.response?.data?.error ||
@@ -128,6 +147,17 @@ export const paymentService = {
     }
   },
 
+  /**
+   * Get payment status for success page (used for polling)
+   */
+  /**
+   * Get payment status for success page (used for polling)
+   * Updated to match the improved success controller
+   */
+  /**
+   * Get payment status for success page (used for polling)
+   * Updated to match the improved success controller
+   */
   async getPaymentStatus(reference: string): Promise<any> {
     if (!reference) {
       throw new Error("No reference provided");
@@ -135,7 +165,7 @@ export const paymentService = {
 
     try {
       const response = await api.get(
-        `/orders/success?reference=${encodeURIComponent(reference)}`,
+        `/payment/success?reference=${encodeURIComponent(reference)}`,
       );
 
       if (!response.data?.success) {
@@ -144,8 +174,52 @@ export const paymentService = {
         );
       }
 
-      return response.data.data;
+      const data = response.data.data;
+
+      // Robust normalization and fallback logic
+      return {
+        ...data,
+
+        // Ensure critical fields always have safe defaults
+        ucrm_sync_status: data.ucrm_sync_status ?? "pending",
+
+        // isPaid: Consider it paid if status is paid OR verification succeeded
+        isPaid:
+          data.isPaid ??
+          (data.status === "paid" ||
+            data.verification_status === "verified" ||
+            data.status?.toUpperCase() === "PAID"),
+
+        // isFullySynced: True only when UCRM sync is explicitly completed
+        isFullySynced:
+          data.isFullySynced ??
+          (data.ucrm_sync_status === "completed" ||
+            data.ucrm_sync_status?.toLowerCase() === "completed"),
+
+        // Error detection
+        hasSyncError:
+          data.hasSyncError ??
+          (data.ucrm_sync_status === "failed" ||
+            (data.ucrm_error_message &&
+              !data.ucrm_error_message.toLowerCase().includes("successful") &&
+              !data.ucrm_error_message
+                .toLowerCase()
+                .includes("already processed"))),
+
+        // Amount normalization
+        amount: data.amount || data.paid_amount || 0,
+
+        // Extra safety fields
+        reference: data.reference || reference,
+        status: data.status || "unknown",
+      };
     } catch (error: any) {
+      console.error(
+        "Payment status fetch failed for reference:",
+        reference,
+        error,
+      );
+
       throw new Error(
         error.response?.data?.error ||
           error.response?.data?.message ||

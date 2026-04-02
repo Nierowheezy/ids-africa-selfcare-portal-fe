@@ -13,10 +13,19 @@ export default function ProtectedLayout({
   const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
   const router = useRouter();
 
+  // Run auth check once on mount
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
+  // Handle redirect safely inside useEffect
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  // Show loading while checking auth
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -25,9 +34,9 @@ export default function ProtectedLayout({
     );
   }
 
+  // Don't render children until authenticated
   if (!isAuthenticated) {
-    router.push("/login");
-    return null;
+    return null; // or a small loader
   }
 
   return <>{children}</>;

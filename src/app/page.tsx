@@ -21,7 +21,11 @@ export default function LandingPage() {
 
   // Redirect if user is authenticated (after check finishes)
   useEffect(() => {
-    if (isAuthenticated) {
+    if (typeof window === "undefined") return;
+
+    const pathname = window.location.pathname;
+
+    if (pathname === "/" && isAuthenticated) {
       router.replace("/dashboard");
     }
   }, [isAuthenticated, router]);

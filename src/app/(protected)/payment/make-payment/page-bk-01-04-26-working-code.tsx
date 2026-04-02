@@ -70,27 +70,12 @@ export default function MakePaymentPage() {
     return null;
   }
 
-  // Improved Loading state: Show loading first while fetching or data not ready
-  // This prevents flashing the "Service Information Unavailable" screen
-  if (isDataLoading || !data) {
-    return (
-      <div className="flex min-h-screen flex-col bg-gray-50">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p>Loading your information...</p>
-          </div>
-        </main>
-        <Footer />
-        <ChatWidget />
-      </div>
-    );
-  }
-
-  // Service Unavailable State - Only shown AFTER data has loaded
+  // Service Unavailable State
   const service = data?.service;
-  if (service?.plan === "Service Information Unavailable" || !service) {
+  if (
+    !isDataLoading &&
+    (service?.plan === "Service Information Unavailable" || !service)
+  ) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50">
         <Header />
@@ -129,6 +114,22 @@ export default function MakePaymentPage() {
               </div>
             </CardContent>
           </Card>
+        </main>
+        <Footer />
+        <ChatWidget />
+      </div>
+    );
+  }
+
+  if (isDataLoading) {
+    return (
+      <div className="flex min-h-screen flex-col bg-gray-50">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p>Loading your information...</p>
+          </div>
         </main>
         <Footer />
         <ChatWidget />

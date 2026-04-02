@@ -64,7 +64,7 @@ export default function PaymentHistoryPage() {
       staleTime: 5 * 60 * 1000,
     });
 
-  // Handle 401 (session expired) - Highest priority
+  // Handle 401 (session expired)
   if (isError && (error as any)?.response?.status === 401) {
     toast({
       variant: "destructive",
@@ -73,21 +73,6 @@ export default function PaymentHistoryPage() {
     });
     router.push("/login");
     return null;
-  }
-
-  // Improved Loading state: Show skeleton while loading OR while data is not yet available
-  // This prevents flashing the "Payment History Unavailable" screen on initial render
-  if (isLoading || !data) {
-    return (
-      <div className="flex min-h-screen flex-col bg-gray-50">
-        <Header />
-        <main className="flex-1 container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-          <PaymentHistorySkeleton />
-        </main>
-        <Footer />
-        <ChatWidget />
-      </div>
-    );
   }
 
   // === Payment History Unavailable (CRM failed) - Clean Fallback ===
@@ -395,49 +380,5 @@ export default function PaymentHistoryPage() {
       <Footer />
       <ChatWidget />
     </div>
-  );
-}
-
-function PaymentHistorySkeleton() {
-  return (
-    <Card className="shadow-sm">
-      <CardHeader className="border-b">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-9 w-28" />
-        </div>
-      </CardHeader>
-      <CardContent className="p-6">
-        {/* Filters Skeleton */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <Skeleton className="h-11 flex-1" />
-          <Skeleton className="h-11 w-[160px]" />
-        </div>
-
-        {/* Table Skeleton */}
-        <div className="rounded-lg border overflow-hidden">
-          <div className="bg-gray-50 h-12" />
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-16 border-t flex items-center px-6 gap-6">
-              <Skeleton className="h-5 w-28" />
-              <Skeleton className="h-5 w-40" />
-              <Skeleton className="h-5 w-24" />
-              <Skeleton className="h-5 w-32" />
-              <Skeleton className="h-6 w-20 ml-auto" />
-            </div>
-          ))}
-        </div>
-
-        {/* Pagination Skeleton */}
-        <div className="flex justify-between items-center mt-6">
-          <Skeleton className="h-5 w-48" />
-          <div className="flex gap-2">
-            <Skeleton className="h-9 w-9" />
-            <Skeleton className="h-9 w-20" />
-            <Skeleton className="h-9 w-9" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }

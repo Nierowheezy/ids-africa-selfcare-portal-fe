@@ -22,6 +22,7 @@
     "@tanstack/react-query-devtools": "^5.91.3",
     "autoprefixer": "10.4.20",
     "axios": "^1.13.5",
+    "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.4",
@@ -42,6 +43,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

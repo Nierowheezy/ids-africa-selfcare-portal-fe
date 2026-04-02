@@ -46,8 +46,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
   const accessToken = request.cookies.get("access_token")?.value;
+
+  // ✅ Always allow success page FIRST (most important)
+  if (pathname === "/payment/success" && searchParams.has("reference")) {
+    console.log("Middleware: Allowing /payment/success");
+    return NextResponse.next();
+  }
 
   // If user is logged in, redirect AWAY from these public pages
   if (accessToken) {

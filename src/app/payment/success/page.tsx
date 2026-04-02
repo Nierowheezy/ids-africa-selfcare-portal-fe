@@ -1,5 +1,6 @@
+// app/payment/success/page.tsx
 import { Suspense } from "react";
-import PaymentSuccessClient from "./SuccessClient"; // Change filename if you used a different name
+import PaymentSuccessClient from "./SuccessClient";
 import { Loader2 } from "lucide-react";
 
 export default function PaymentSuccessPage() {

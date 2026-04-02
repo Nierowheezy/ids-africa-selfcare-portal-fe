@@ -25,21 +25,6 @@ import { toast } from "@/components/ui/use-toast";
 import { dashboardService } from "@/services/dashboardService";
 import { paymentService } from "@/services/paymentService";
 
-// Define proper interface for service data
-interface ServiceData {
-  plan: string;
-  upload: number;
-  download: number;
-  from: string;
-  to: string;
-  renewal: string;
-  status: "active" | "suspended" | "ended" | "inactive";
-  left: string | number;
-  price?: number;
-  monthlyFee?: number;
-  totalPrice?: number;
-}
-
 export default function MakePaymentPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -70,27 +55,12 @@ export default function MakePaymentPage() {
     return null;
   }
 
-  // Improved Loading state: Show loading first while fetching or data not ready
-  // This prevents flashing the "Service Information Unavailable" screen
-  if (isDataLoading || !data) {
-    return (
-      <div className="flex min-h-screen flex-col bg-gray-50">
-        <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p>Loading your information...</p>
-          </div>
-        </main>
-        <Footer />
-        <ChatWidget />
-      </div>
-    );
-  }
-
-  // Service Unavailable State - Only shown AFTER data has loaded
+  // === Service Unavailable State (Clean Fallback) ===
   const service = data?.service;
-  if (service?.plan === "Service Information Unavailable" || !service) {
+  if (
+    !isDataLoading &&
+    (service?.plan === "Service Information Unavailable" || !service)
+  ) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50">
         <Header />
@@ -136,6 +106,22 @@ export default function MakePaymentPage() {
     );
   }
 
+  if (isDataLoading) {
+    return (
+      <div className="flex min-h-screen flex-col bg-gray-50">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p>Loading your information...</p>
+          </div>
+        </main>
+        <Footer />
+        <ChatWidget />
+      </div>
+    );
+  }
+
   if (error || !data?.user) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50">
@@ -168,20 +154,13 @@ export default function MakePaymentPage() {
   }
 
   const user = data.user;
-  const serviceData = data.service as ServiceData | undefined;
-
-  // Safe amount calculation
-  const amount =
-    serviceData?.price ||
-    serviceData?.monthlyFee ||
-    serviceData?.totalPrice ||
-    12000;
+  const serviceData = data.service;
 
   const formData = {
     firstName: user.name?.split(" ")[0] || "N/A",
     lastName: user.name?.split(" ").slice(1).join(" ") || "N/A",
     email: user.email || "N/A",
-    amount: amount.toString(),
+    amount: "12000", // TODO: In future, replace with real dynamic amount from service
     accountNumber: user.id?.toString() || "N/A",
   };
 
@@ -191,27 +170,11 @@ export default function MakePaymentPage() {
 
     if (selectedMethod === "paystack") {
       try {
-        const result = await paymentService.initializePayment(
+        const { authorization_url } = await paymentService.initializePayment(
           Number(formData.amount),
           formData.email.trim(),
         );
-
-        // Show friendly message when reusing a pending payment
-        if (result.message) {
-          toast({
-            title: "Continuing Previous Payment",
-            description: result.message,
-            duration: 6000,
-          });
-        } else {
-          toast({
-            title: "Payment Initialized",
-            description: "Redirecting to Paystack checkout...",
-          });
-        }
-
-        // Redirect to Paystack checkout
-        window.location.href = result.authorization_url;
+        window.location.href = authorization_url;
       } catch (err: any) {
         console.error("Payment init failed:", err);
         toast({
@@ -443,11 +406,12 @@ export default function MakePaymentPage() {
                       Total
                     </span>
                     <span className="text-3xl font-bold text-gray-900">
-                      ₦{parseInt(formData.amount).toLocaleString()}
+                      N {parseInt(formData.amount || "0").toLocaleString()}
                     </span>
                   </div>
                 </div>
 
+                {/* Payment Method Info */}
                 <div className="pt-4 border-t">
                   <p className="text-sm text-gray-500 mb-2">Payment via</p>
                   <div className="flex items-center space-x-2">

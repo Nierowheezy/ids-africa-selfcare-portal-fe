@@ -33,7 +33,7 @@ export default function ProfilePage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Handle 401 (session expired) - Highest priority
+  // Handle 401 (session expired)
   if (isError && (error as any)?.response?.status === 401) {
     toast({
       variant: "destructive",
@@ -72,9 +72,8 @@ export default function ProfilePage() {
     );
   }
 
-  // Improved Loading state: Show skeleton while loading OR while data is not yet available
-  // This prevents the flash of "Profile Not Found" on initial render
-  if (isLoading || !data) {
+  // Loading state
+  if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50">
         <Header />
@@ -87,7 +86,7 @@ export default function ProfilePage() {
     );
   }
 
-  // Safe data check: no data or no user (kept your original safeguard)
+  // Safe data check: no data or no user
   const user = data?.user;
   const service = data?.service;
 
@@ -118,20 +117,14 @@ export default function ProfilePage() {
     );
   }
 
-  // Safe profile data - Fixed TypeScript error by allowing "unknown"
+  // Safe profile data
   const profileData = {
     fullName: user.name || "Not provided",
     accountNumber: user.id?.toString() || "N/A",
     accountCreated: user.registrationDate || "N/A",
     accountBalance: user.accountBalance || "N/A",
     servicePlan: service?.plan || "N/A",
-    // serviceStatus can be "active" | "suspended" | "ended" | "inactive" | "unknown"
-    serviceStatus: (service?.status || "unknown") as
-      | "active"
-      | "suspended"
-      | "ended"
-      | "inactive"
-      | "unknown",
+    serviceStatus: service?.status || "N/A",
     email: user.email || "Not provided",
     phone: user.phone || "Not provided",
     address: user.address || "Not provided",
